@@ -1,0 +1,446 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { 
+  Users, 
+  Settings, 
+  Database,
+  Mail,
+  Shield,
+  Palette,
+  Globe,
+  Bell,
+  FileText,
+  Calculator,
+  Receipt,
+  DollarSign,
+  Building2,
+  ShoppingCart,
+  Hash,
+  Layers3
+} from 'lucide-react'
+import SalesRepsManagement from './sales-reps-settings'
+import TaxCodesManagement from './tax-codes-settings'
+import CompanySettings from './company-settings'
+import TemplateEditor from '@/components/templates/template-editor'
+import TermsEditor from '@/components/terms/terms-editor'
+import DocumentNumberingSettings from './document-numbering-settings'
+import ModuleSettings from './module-settings'
+
+type SettingsCategory = 
+  | 'sales-reps'
+  | 'templates'
+  | 'tax-codes'
+  | 'payment-terms'
+  | 'po-settings'
+  | 'document-numbering'
+  | 'modules'
+  | 'users'
+  | 'company'
+  | 'integrations'
+  | 'notifications'
+  | 'security'
+  | 'appearance'
+  | 'data'
+
+export default function SettingsPage() {
+  const [activeCategory, setActiveCategory] = useState<SettingsCategory>('sales-reps')
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false)
+  const [showTermsEditor, setShowTermsEditor] = useState(false)
+
+  const categories = [
+    {
+      id: 'sales-reps' as SettingsCategory,
+      name: 'Sales Representatives',
+      description: 'Manage sales team members, territories, and commissions',
+      icon: Users,
+      color: 'text-teal-600'
+    },
+    {
+      id: 'templates' as SettingsCategory,
+      name: 'Document Templates',
+      description: 'Customize estimates, invoices, sales orders, and purchase orders',
+      icon: FileText,
+      color: 'text-purple-600'
+    },
+    {
+      id: 'tax-codes' as SettingsCategory,
+      name: 'Tax Codes',
+      description: 'Manage tax rates, tax-exempt codes, and custom tax categories',
+      icon: Receipt,
+      color: 'text-emerald-600'
+    },
+    {
+      id: 'payment-terms' as SettingsCategory,
+      name: 'Payment Terms',
+      description: 'Configure payment terms for estimates, sales orders, and invoices',
+      icon: DollarSign,
+      color: 'text-green-600'
+    },
+    {
+      id: 'document-numbering' as SettingsCategory,
+      name: 'Document Numbering',
+      description: 'Configure starting numbers for estimates, invoices, POs, and receipts',
+      icon: Hash,
+      color: 'text-indigo-600'
+    },
+    {
+      id: 'modules' as SettingsCategory,
+      name: 'Module Settings',
+      description: 'Enable or disable optional system modules',
+      icon: Layers3,
+      color: 'text-cyan-600'
+    },
+    {
+      id: 'po-settings' as SettingsCategory,
+      name: 'Purchase Orders / PO',
+      description: 'Company settings for purchase orders, billing and shipping addresses',
+      icon: ShoppingCart,
+      color: 'text-orange-600'
+    },
+    {
+      id: 'users' as SettingsCategory,
+      name: 'User Management',
+      description: 'Manage user accounts, roles, and permissions',
+      icon: Shield,
+      color: 'text-blue-600'
+    },
+    {
+      id: 'company' as SettingsCategory,
+      name: 'Company Profile',
+      description: 'Company information, address, and contact details',
+      icon: Globe,
+      color: 'text-green-600'
+    },
+    {
+      id: 'integrations' as SettingsCategory,
+      name: 'Integrations',
+      description: 'Third-party integrations and API connections',
+      icon: Database,
+      color: 'text-purple-600'
+    },
+    {
+      id: 'notifications' as SettingsCategory,
+      name: 'Notifications',
+      description: 'Email alerts, system notifications, and preferences',
+      icon: Bell,
+      color: 'text-orange-600'
+    },
+    {
+      id: 'security' as SettingsCategory,
+      name: 'Security',
+      description: 'Authentication, access controls, and security policies',
+      icon: Shield,
+      color: 'text-red-600'
+    },
+    {
+      id: 'appearance' as SettingsCategory,
+      name: 'Appearance',
+      description: 'Themes, layouts, and display preferences',
+      icon: Palette,
+      color: 'text-pink-600'
+    },
+    {
+      id: 'data' as SettingsCategory,
+      name: 'Data Management',
+      description: 'Backup, export, import, and data retention settings',
+      icon: FileText,
+      color: 'text-indigo-600'
+    }
+  ]
+
+  const renderSettingsContent = () => {
+    switch (activeCategory) {
+      case 'sales-reps':
+        return <SalesRepsManagement />
+      
+      case 'tax-codes':
+        return <TaxCodesManagement />
+      
+      case 'po-settings':
+        return <CompanySettings />
+      
+      case 'document-numbering':
+        return <DocumentNumberingSettings />
+      
+      case 'modules':
+        return <ModuleSettings />
+      
+      case 'payment-terms':
+        return (
+          <div className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Terms Management</h2>
+              <p className="text-gray-600">Configure payment terms used across estimates, sales orders, and invoices</p>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Payment Terms
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Payment terms define how long customers have to pay invoices and any early payment discounts.
+                    These terms are used for invoice aging reports and automatic payment reminders.
+                  </p>
+                  
+                  <Button 
+                    onClick={() => setShowTermsEditor(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Manage Payment Terms
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+      
+      case 'templates':
+        return (
+          <div className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Templates</h2>
+              <p className="text-gray-600">Customize the appearance and layout of your business documents</p>
+            </div>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                { type: 'estimate', name: 'Estimates', description: 'Quote templates' },
+                { type: 'invoice', name: 'Invoices', description: 'Billing templates' },
+                { type: 'sales_order', name: 'Sales Orders', description: 'Order confirmation templates' },
+                { type: 'purchase_order', name: 'Purchase Orders', description: 'Vendor order templates' }
+              ].map(template => (
+                <Card key={template.type} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded">
+                        <FileText className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm">{template.name}</CardTitle>
+                        <p className="text-xs text-gray-500">{template.description}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Button
+                      size="sm"
+                      onClick={() => setShowTemplateEditor(true)}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Palette className="w-3 h-3 mr-1" />
+                      Edit Template
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Template Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Global Settings</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Company Logo</span>
+                      <Button size="sm" variant="outline">Upload Logo</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Default Currency</span>
+                      <select className="border rounded px-2 py-1 text-sm">
+                        <option>USD ($)</option>
+                        <option>EUR (€)</option>
+                        <option>GBP (£)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Date Format</span>
+                      <select className="border rounded px-2 py-1 text-sm">
+                        <option>MM/DD/YYYY</option>
+                        <option>DD/MM/YYYY</option>
+                        <option>YYYY-MM-DD</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium mb-2">Quick Actions</h4>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline">
+                      Import Templates
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Export Templates
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Reset to Defaults
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+      
+      case 'users':
+        return (
+          <div className="p-6 text-center">
+            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">User Management</h3>
+            <p className="text-gray-600">Coming soon - Manage user accounts and permissions</p>
+          </div>
+        )
+      
+      case 'company':
+        return (
+          <div className="p-6 text-center">
+            <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Company Profile</h3>
+            <p className="text-gray-600">Coming soon - Configure company information</p>
+          </div>
+        )
+      
+      case 'integrations':
+        return (
+          <div className="p-6 text-center">
+            <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Integrations</h3>
+            <p className="text-gray-600">Coming soon - Connect with third-party services</p>
+          </div>
+        )
+      
+      case 'notifications':
+        return (
+          <div className="p-6 text-center">
+            <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Notifications</h3>
+            <p className="text-gray-600">Coming soon - Configure notification preferences</p>
+          </div>
+        )
+      
+      case 'security':
+        return (
+          <div className="p-6 text-center">
+            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Security Settings</h3>
+            <p className="text-gray-600">Coming soon - Manage security and access controls</p>
+          </div>
+        )
+      
+      case 'appearance':
+        return (
+          <div className="p-6 text-center">
+            <Palette className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Appearance</h3>
+            <p className="text-gray-600">Coming soon - Customize themes and layouts</p>
+          </div>
+        )
+      
+      case 'data':
+        return (
+          <div className="p-6 text-center">
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Data Management</h3>
+            <p className="text-gray-600">Coming soon - Backup and data management tools</p>
+          </div>
+        )
+      
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600">Manage your ERP system configuration and preferences</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Settings Categories Sidebar */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Settings className="w-5 h-5" />
+                Categories
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="space-y-1">
+                {categories.map((category) => {
+                  const Icon = category.icon
+                  const isActive = activeCategory === category.id
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setActiveCategory(category.id)}
+                      className={`w-full text-left p-3 rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Icon className={`w-5 h-5 mt-0.5 ${isActive ? 'text-blue-600' : category.color}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+                            {category.name}
+                          </p>
+                          <p className={`text-xs mt-1 ${isActive ? 'text-blue-700' : 'text-gray-500'}`}>
+                            {category.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Settings Content */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardContent className="p-0">
+              {renderSettingsContent()}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Template Editor Modal */}
+      {showTemplateEditor && (
+        <TemplateEditor
+          onClose={() => setShowTemplateEditor(false)}
+          templateType="estimate"
+        />
+      )}
+
+      {/* Terms Editor Modal */}
+      {showTermsEditor && (
+        <TermsEditor
+          onClose={() => setShowTermsEditor(false)}
+        />
+      )}
+    </div>
+  )
+}

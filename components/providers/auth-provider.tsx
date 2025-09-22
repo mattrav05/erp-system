@@ -1,0 +1,191 @@
+'use client'
+
+import { createContext, useContext, useEffect, useState } from 'react'
+import { User } from '@supabase/supabase-js'
+import { getCurrentUser, getCurrentProfile, type Profile } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
+
+interface AuthContextType {
+  user: User | null
+  profile: Profile | null
+  loading: boolean
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  profile: null,
+  loading: true
+})
+
+export function useAuth() {
+  return useContext(AuthContext)
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  console.log('AuthProvider render - user:', user?.email || 'none', 'loading:', loading)
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadAuth = async () => {
+      console.log('🚀 AuthProvider: Loading initial auth state...')
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        console.log('👤 AuthProvider: Got current user:', user?.email || 'none', 'error:', error?.message || 'none')
+
+        if (!mounted) return
+
+        setUser(user)
+
+        if (user) {
+          console.log('👤 AuthProvider: User found, loading profile...')
+          try {
+            const { data: userProfile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single()
+
+            console.log('📋 AuthProvider: Got profile:', userProfile, 'error:', profileError?.message || 'none')
+
+            if (mounted) {
+              setProfile(userProfile || {
+                id: user.id,
+                email: user.email || 'unknown@example.com',
+                first_name: 'User',
+                last_name: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            }
+          } catch (profileError) {
+            console.error('❌ Profile error:', profileError)
+            if (mounted) {
+              setProfile({
+                id: user.id,
+                email: user.email || 'unknown@example.com',
+                first_name: 'User',
+                last_name: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            }
+          }
+        } else {
+          console.log('👻 AuthProvider: No user found')
+        }
+      } catch (error) {
+        console.error('💥 Auth error:', error)
+      } finally {
+        if (mounted) {
+          console.log('✅ AuthProvider: Setting loading to false')
+          setLoading(false)
+        }
+      }
+    }
+
+    // Load initial auth state
+    loadAuth()
+
+    // Listen for auth state changes (sign in/out)
+    console.log('👂 AuthProvider: Setting up auth state listener...')
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔥 AUTH STATE CHANGED:', event, session?.user?.email || 'no user')
+        console.log('📊 Current state before change - user:', user?.email || 'none', 'loading:', loading)
+
+        if (!mounted) {
+          console.log('⚠️ Component unmounted, ignoring auth change')
+          return
+        }
+
+        // Force state updates regardless of current state
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('✅ HANDLING SIGN IN for:', session.user.email)
+
+          // Set user immediately
+          setUser(session.user)
+          setLoading(false)
+
+          // Get profile directly here
+          try {
+            const { data: userProfile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+
+            console.log('📋 Profile loaded on sign in:', userProfile)
+
+            if (mounted) {
+              setProfile(userProfile || {
+                id: session.user.id,
+                email: session.user.email || 'unknown@example.com',
+                first_name: 'User',
+                last_name: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            }
+          } catch (profileError) {
+            console.error('❌ Profile error on auth change:', profileError)
+            if (mounted) {
+              setProfile({
+                id: session.user.id,
+                email: session.user.email || 'unknown@example.com',
+                first_name: 'User',
+                last_name: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            }
+          }
+        } else if (event === 'SIGNED_OUT' || !session) {
+          console.log('❌ HANDLING SIGN OUT')
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          console.log('🔄 Token refresh with user:', session.user.email)
+          setUser(session.user)
+          setLoading(false)
+        } else {
+          console.log('🤷 Other auth event:', event, 'session:', !!session)
+          setLoading(false)
+        }
+
+        console.log('📊 Auth state processing complete')
+      }
+    )
+    console.log('👂 Auth listener subscription created:', !!subscription)
+
+    // Add a timeout as safety net
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.log('⏰ Auth timeout - forcing loading to false')
+        setLoading(false)
+      }
+    }, 5000)
+
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+      console.log('🧹 AuthProvider cleanup')
+    }
+  }, [])
+
+  return (
+    <AuthContext.Provider value={{ user, profile, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
