@@ -35,6 +35,11 @@ interface UserProfile {
   created_at: string
   updated_at: string
   last_sign_in_at?: string
+  sales_rep?: {
+    id: string
+    employee_code: string
+    territory?: string
+  }
 }
 
 interface SalesRep {
@@ -438,8 +443,15 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    role: 'user' as UserProfile['role']
+    role: 'user' as UserProfile['role'],
+    isSalesRep: false,
+    employeeCode: '',
+    phone: '',
+    commissionRate: 0,
+    territory: '',
+    hireDate: ''
   })
+  const [existingSalesRep, setExistingSalesRep] = useState<SalesRep | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
 
@@ -448,10 +460,44 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
       setFormData({
         firstName: user.first_name || '',
         lastName: user.last_name || '',
-        role: user.role
+        role: user.role,
+        isSalesRep: false,
+        employeeCode: '',
+        phone: '',
+        commissionRate: 0,
+        territory: '',
+        hireDate: ''
       })
+
+      // Check if user is already a sales rep
+      fetchSalesRepProfile(user.id)
     }
   }, [user])
+
+  const fetchSalesRepProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (data && !error) {
+        setExistingSalesRep(data)
+        setFormData(prev => ({
+          ...prev,
+          isSalesRep: true,
+          employeeCode: data.employee_code,
+          phone: data.phone || '',
+          commissionRate: data.commission_rate,
+          territory: data.territory || '',
+          hireDate: data.hire_date || ''
+        }))
+      }
+    } catch (error) {
+      console.log('No existing sales rep profile')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -462,6 +508,13 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
     if (!formData.firstName) newErrors.push('First name is required')
     if (!formData.lastName) newErrors.push('Last name is required')
 
+    if (formData.isSalesRep) {
+      if (!formData.employeeCode) newErrors.push('Employee code is required for sales reps')
+      if (formData.commissionRate < 0 || formData.commissionRate > 100) {
+        newErrors.push('Commission rate must be between 0 and 100')
+      }
+    }
+
     if (newErrors.length > 0) {
       setErrors(newErrors)
       return
@@ -470,7 +523,8 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
     setIsSubmitting(true)
 
     try {
-      const { data, error } = await supabase
+      // Update user profile
+      const { data: updatedUser, error: userError } = await supabase
         .from('profiles')
         .update({
           first_name: formData.firstName,
@@ -482,12 +536,60 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
         .select()
         .single()
 
-      if (error) {
-        setErrors([error.message])
+      if (userError) {
+        setErrors([userError.message])
         return
       }
 
-      onUserUpdated(data)
+      // Handle sales rep profile
+      if (formData.isSalesRep) {
+        const salesRepData = {
+          employee_code: formData.employeeCode,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone || null,
+          commission_rate: formData.commissionRate,
+          territory: formData.territory || null,
+          hire_date: formData.hireDate || null,
+          user_id: user.id
+        }
+
+        if (existingSalesRep) {
+          // Update existing sales rep
+          const { error: salesRepError } = await supabase
+            .from('sales_reps')
+            .update(salesRepData)
+            .eq('id', existingSalesRep.id)
+
+          if (salesRepError) {
+            setErrors([`Failed to update sales rep: ${salesRepError.message}`])
+            return
+          }
+        } else {
+          // Create new sales rep
+          const { error: salesRepError } = await supabase
+            .from('sales_reps')
+            .insert([salesRepData])
+
+          if (salesRepError) {
+            setErrors([`Failed to create sales rep: ${salesRepError.message}`])
+            return
+          }
+        }
+      } else if (existingSalesRep && !formData.isSalesRep) {
+        // Remove sales rep if unchecked
+        const { error: deleteError } = await supabase
+          .from('sales_reps')
+          .update({ user_id: null })
+          .eq('id', existingSalesRep.id)
+
+        if (deleteError) {
+          setErrors([`Failed to unlink sales rep: ${deleteError.message}`])
+          return
+        }
+      }
+
+      onUserUpdated(updatedUser)
       onClose()
     } catch (error) {
       setErrors(['Failed to update user. Please try again.'])
@@ -580,6 +682,87 @@ function EditUserModal({ isOpen, user, onClose, onUserUpdated }: EditUserModalPr
               </select>
             </div>
 
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="isSalesRep"
+                  checked={formData.isSalesRep}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isSalesRep: e.target.checked }))}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isSalesRep" className="text-sm font-medium text-gray-700">
+                  Sales Representative
+                </label>
+              </div>
+
+              {formData.isSalesRep && (
+                <div className="space-y-3 pl-6 border-l-2 border-blue-100">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Employee Code *
+                      </label>
+                      <Input
+                        value={formData.employeeCode}
+                        onChange={(e) => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
+                        placeholder="SR001"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone
+                      </label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Commission Rate (%)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={formData.commissionRate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, commissionRate: parseFloat(e.target.value) || 0 }))}
+                        placeholder="5.0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Territory
+                      </label>
+                      <Input
+                        value={formData.territory}
+                        onChange={(e) => setFormData(prev => ({ ...prev, territory: e.target.value }))}
+                        placeholder="North Region"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hire Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.hireDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, hireDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button
                 type="submit"
@@ -627,7 +810,14 @@ export default function UserManagement() {
       setLoading(true)
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          sales_rep:sales_reps!sales_reps_user_id_fkey(
+            id,
+            employee_code,
+            territory
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -649,9 +839,8 @@ export default function UserManagement() {
   }
 
   const handleUserUpdated = (updatedUser: UserProfile) => {
-    setUsers(prev => prev.map(user =>
-      user.id === updatedUser.id ? updatedUser : user
-    ))
+    // Refresh the entire user list to get updated sales rep data
+    fetchUsers()
     setShowEditModal(false)
     setSelectedUser(null)
   }
@@ -700,6 +889,17 @@ export default function UserManagement() {
       <Badge className={`${config.color} border-0 flex items-center gap-1`}>
         <Icon className="w-3 h-3" />
         {config.label}
+      </Badge>
+    )
+  }
+
+  const getSalesRepBadge = (salesRep: UserProfile['sales_rep']) => {
+    if (!salesRep) return null
+
+    return (
+      <Badge className="bg-blue-100 text-blue-800 border-0 flex items-center gap-1">
+        <Users className="w-3 h-3" />
+        Sales Rep ({salesRep.employee_code})
       </Badge>
     )
   }
@@ -784,6 +984,7 @@ export default function UserManagement() {
                             }
                           </h3>
                           {getRoleBadge(user.role)}
+                          {getSalesRepBadge(user.sales_rep)}
                         </div>
 
                         <div className="flex items-center gap-4 text-sm text-gray-600">
