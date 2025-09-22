@@ -825,20 +825,34 @@ export default function UserManagement() {
         body: JSON.stringify({ userId: userToDelete.id })
       })
 
+      let responseData
+      try {
+        responseData = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError)
+        responseData = { error: 'Invalid response from server' }
+      }
+
+      // Always close the modal first
+      setDeleteConfirm(null)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Error deleting user:', errorData.error)
-        alert('Failed to delete user: ' + (errorData.error || 'Unknown error'))
+        console.error('Error deleting user:', responseData.error)
+        alert('Failed to delete user: ' + (responseData.error || 'Unknown error'))
+        // Still refresh the user list to check if deletion actually worked
+        fetchUsers()
         return
       }
 
-      // Success - remove user from local state
-      setUsers(prev => prev.filter(user => user.id !== userToDelete.id))
-      setDeleteConfirm(null)
+      // Success - refresh the user list to get current state
+      await fetchUsers()
       alert('User deleted successfully')
     } catch (error) {
       console.error('Error deleting user:', error)
-      alert('Failed to delete user: Network error')
+      setDeleteConfirm(null)
+      // Always refresh the user list in case the deletion actually worked
+      fetchUsers()
+      alert('Failed to delete user: Network error (but user list has been refreshed)')
     }
   }
 

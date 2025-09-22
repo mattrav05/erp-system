@@ -71,18 +71,27 @@ export async function DELETE(request: NextRequest) {
     if (authError) {
       console.error('Error deleting user from auth:', authError)
       return NextResponse.json(
-        { error: `Database error deleting user: ${authError.message}` },
+        {
+          success: false,
+          error: `Database error deleting user: ${authError.message}`
+        },
         { status: 500 }
       )
     }
 
     console.log('User deleted successfully from auth')
-    return NextResponse.json({ success: true, message: 'User deleted successfully' })
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully'
+    }, { status: 200 })
 
   } catch (error) {
     console.error('Error in delete user API:', error)
     return NextResponse.json(
-      { error: `Database error deleting user: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      {
+        success: false,
+        error: `Database error deleting user: ${error instanceof Error ? error.message : 'Unknown error'}`
+      },
       { status: 500 }
     )
   }
