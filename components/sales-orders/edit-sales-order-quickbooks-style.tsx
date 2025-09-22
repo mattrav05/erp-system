@@ -1725,10 +1725,12 @@ Best regards,
         )}
 
         {/* Document Flow Tracker */}
-        <DocumentFlowTracker
-          relationships={documentRelationships}
-          currentDocument="salesOrder"
-          currentDocumentId={salesOrder.id}
+        {Object.keys(documentRelationships).length > 0 && (
+          <div className="px-4 py-2 border-b bg-blue-50">
+            <DocumentFlowTracker
+              relationships={documentRelationships}
+              currentDocument="salesOrder"
+              currentDocumentId={salesOrder.id}
           onNavigate={(type, id) => {
             if (type === 'estimate') {
               // Navigate to specific estimate for editing
@@ -1744,8 +1746,9 @@ Best regards,
               window.location.href = `/purchase-orders?open=${id}`
             }
           }}
-          className="mt-4"
-        />
+            />
+          </div>
+        )}
 
         {/* Bill To and Ship To Addresses */}
         <div className="grid grid-cols-2 gap-6">
