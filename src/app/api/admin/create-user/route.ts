@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
       hireDate
     } = await request.json()
 
+    console.log('Creating user with email:', email)
+
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: 'Email, password, first name, and last name are required' },
@@ -29,6 +31,18 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
+
+    // Check for existing user by email first
+    const { data: existingUsers } = await adminClient.auth.admin.listUsers()
+    const existingUser = existingUsers.users?.find(u => u.email === email)
+
+    if (existingUser) {
+      console.log('User already exists with email:', email)
+      return NextResponse.json(
+        { error: `User with email ${email} already exists` },
+        { status: 400 }
+      )
+    }
 
     // Create user via Supabase Auth Admin API
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -56,27 +70,64 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create profile entry
-    const { data: profile, error: profileError } = await adminClient
+    // Check if profile already exists (in case of previous failed creation)
+    const { data: existingProfile } = await adminClient
       .from('profiles')
-      .insert({
-        id: authData.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        role: role || 'user'
-      })
-      .select()
+      .select('*')
+      .eq('id', authData.user.id)
       .single()
 
-    if (profileError) {
-      console.error('Error creating profile:', profileError)
-      // If profile creation fails, clean up the auth user
-      await adminClient.auth.admin.deleteUser(authData.user.id)
-      return NextResponse.json(
-        { error: `Failed to create user profile: ${profileError.message}` },
-        { status: 500 }
-      )
+    let profile = existingProfile
+
+    if (!existingProfile) {
+      // Create profile entry
+      const { data: newProfile, error: profileError } = await adminClient
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role: role || 'user'
+        })
+        .select()
+        .single()
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        // If profile creation fails, clean up the auth user
+        await adminClient.auth.admin.deleteUser(authData.user.id)
+        return NextResponse.json(
+          { error: `Failed to create user profile: ${profileError.message}` },
+          { status: 500 }
+        )
+      }
+
+      profile = newProfile
+    } else {
+      // Profile already exists, update it with new information
+      const { data: updatedProfile, error: updateError } = await adminClient
+        .from('profiles')
+        .update({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role: role || 'user',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authData.user.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Error updating existing profile:', updateError)
+        return NextResponse.json(
+          { error: `Failed to update user profile: ${updateError.message}` },
+          { status: 500 }
+        )
+      }
+
+      profile = updatedProfile
     }
 
     // Create sales rep profile if user is marked as sales rep
