@@ -29,7 +29,25 @@ export async function DELETE(request: NextRequest) {
 
     console.log('Attempting to delete user:', userId)
 
-    // First, try to delete the profile manually (in case cascade doesn't work)
+    // First, unlink any sales rep relationships (remove user_id from sales_reps)
+    try {
+      const { error: salesRepError } = await adminClient
+        .from('sales_reps')
+        .update({ user_id: null })
+        .eq('user_id', userId)
+
+      if (salesRepError) {
+        console.error('Error unlinking sales rep:', salesRepError)
+        // Continue anyway
+      } else {
+        console.log('Sales rep unlinked successfully')
+      }
+    } catch (salesRepError) {
+      console.error('Sales rep unlinking attempt failed:', salesRepError)
+      // Continue anyway
+    }
+
+    // Second, try to delete the profile manually (in case cascade doesn't work)
     try {
       const { error: profileError } = await adminClient
         .from('profiles')
