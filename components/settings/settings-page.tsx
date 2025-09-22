@@ -28,6 +28,7 @@ import TemplateEditor from '@/components/templates/template-editor'
 import TermsEditor from '@/components/terms/terms-editor'
 import DocumentNumberingSettings from './document-numbering-settings'
 import ModuleSettings from './module-settings'
+import UserManagement from './user-management'
 
 type SettingsCategory = 
   | 'sales-reps'
@@ -298,13 +299,7 @@ export default function SettingsPage() {
         )
       
       case 'users':
-        return (
-          <div className="p-6 text-center">
-            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">User Management</h3>
-            <p className="text-gray-600">Coming soon - Manage user accounts and permissions</p>
-          </div>
-        )
+        return <UserManagement />
       
       case 'company':
         return (
