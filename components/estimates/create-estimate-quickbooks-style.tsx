@@ -825,30 +825,45 @@ Best regards,
       const billToLines = billTo.split('\n').filter(line => line.trim())
       const shipToLines = shipTo.split('\n').filter(line => line.trim())
 
-      // Create estimate
+      // Create estimate with all required fields from database schema
       const estimateData = {
         estimate_number: uniqueNumber,
         customer_id: customerId,
         sales_rep_id: salesReps.find(rep => `${rep.first_name} ${rep.last_name}` === salesRep)?.id || null,
+        template_id: null, // Optional
+        bill_to_company: billToLines[0] || null,
+        bill_to_contact: null, // Not captured in current form
+        bill_to_address_line_1: billToLines[1] || null,
+        bill_to_address_line_2: billToLines[2] || null,
+        bill_to_city: null, // Parse from address if needed
+        bill_to_state: null, // Parse from address if needed
+        bill_to_zip: null, // Parse from address if needed
+        bill_to_country: 'US', // Default to US
+        ship_to_company: shipToLines[0] || null,
+        ship_to_contact: null, // Not captured in current form
+        ship_to_address_line_1: shipToLines[1] || null,
+        ship_to_address_line_2: shipToLines[2] || null,
+        ship_to_city: null, // Parse from address if needed
+        ship_to_state: null, // Parse from address if needed
+        ship_to_zip: null, // Parse from address if needed
+        ship_to_country: 'US', // Default to US
+        ship_to_same_as_billing: shipSameAsBill,
         estimate_date: date,
         expiration_date: expirationDate || null,
         reference_number: poNumber || null,
-        bill_to_company: billToLines[0] || null,
-        bill_to_address_line_1: billToLines[1] || null,
-        bill_to_address_line_2: billToLines[2] || null,
-        ship_to_company: shipToLines[0] || null,
-        ship_to_address_line_1: shipToLines[1] || null,
-        ship_to_address_line_2: shipToLines[2] || null,
-        ship_to_same_as_billing: shipSameAsBill,
+        job_name: null, // Not captured in current form
         subtotal,
         tax_rate: defaultTaxRate,
         tax_amount: taxAmount,
+        shipping_amount: 0, // Default to 0
+        discount_amount: 0, // Default to 0
         total_amount: total,
+        status: 'DRAFT' as const,
         internal_notes: memo || null,
         customer_notes: customerMessage || null,
         terms_and_conditions: terms || null,
-        status: 'DRAFT' as const,
-        last_edited_by: user?.id || null
+        last_emailed_at: null,
+        email_count: 0
       }
 
       const { data: estimateResult, error: estimateError } = await supabase
@@ -864,20 +879,26 @@ Best regards,
 
       if (estimateError) throw estimateError
 
-      // Create line items
+      // Create line items with all required fields from database schema
       const lineItemsData = validLineItems.map((item, index) => ({
         estimate_id: estimateResult.id,
         line_number: index + 1,
+        item_type: 'PRODUCT' as const,
         product_id: item.product_id || null,
         sku: item.item || null,
         description: item.description,
-        quantity: item.qty,
-        unit_price: item.rate,
-        unit_of_measure: item.unit_of_measure,
-        item_type: 'PRODUCT' as const,
-        sort_order: index + 1,
+        long_description: null, // Not captured in current form
+        quantity: item.qty || 1,
+        unit_of_measure: item.unit_of_measure || 'each',
+        unit_price: item.rate || 0,
+        line_total: (item.qty || 1) * (item.rate || 0),
+        discount_type: 'NONE' as const,
+        discount_value: 0,
+        discounted_total: null,
         is_taxable: item.is_taxable || false,
-        tax_code: item.is_taxable ? 'TAX' : null
+        tax_code: item.is_taxable ? 'TAX' : null,
+        notes: null,
+        sort_order: index + 1
       }))
 
       const { error: lineItemsError } = await supabase
