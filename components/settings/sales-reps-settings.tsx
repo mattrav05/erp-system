@@ -290,6 +290,49 @@ export default function SalesRepsSettings() {
         <DatabaseSetupBanner tableName="sales_reps" feature="Sales Representatives" />
       )}
 
+      {/* Stats Summary */}
+      {!showSetupBanner && salesReps.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Total Reps</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-600">{salesReps.length}</div>
+          </div>
+
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Link className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-gray-700">Linked</span>
+            </div>
+            <div className="text-2xl font-bold text-green-600">
+              {salesReps.filter(rep => rep.linked_user).length}
+            </div>
+          </div>
+
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <User className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Unlinked</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-600">
+              {salesReps.filter(rep => !rep.linked_user).length}
+            </div>
+          </div>
+
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm font-medium text-gray-700">Active</span>
+            </div>
+            <div className="text-2xl font-bold text-emerald-600">
+              {salesReps.filter(rep => rep.is_active).length}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -395,14 +438,34 @@ export default function SalesRepsSettings() {
                       </div>
                     )}
                     {/* Linked User Account */}
-                    {rep.linked_user && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Link className="w-3 h-3 text-blue-400" />
-                        <span className="text-blue-600 font-medium">
-                          Linked to {rep.linked_user.first_name && rep.linked_user.last_name
-                            ? `${rep.linked_user.first_name} ${rep.linked_user.last_name}`
-                            : rep.linked_user.email}
+                    {rep.linked_user ? (
+                      <div className="flex items-center gap-2 text-sm bg-blue-50 p-2 rounded">
+                        <Link className="w-3 h-3 text-blue-500" />
+                        <div className="flex-1">
+                          <span className="text-blue-700 font-medium">
+                            User Account: {rep.linked_user.first_name && rep.linked_user.last_name
+                              ? `${rep.linked_user.first_name} ${rep.linked_user.last_name}`
+                              : rep.linked_user.email}
+                          </span>
+                          {rep.linked_user.email !== rep.email && (
+                            <div className="text-xs text-blue-600">
+                              {rep.linked_user.email}
+                            </div>
+                          )}
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800 border-0 text-xs">
+                          Linked
+                        </Badge>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                        <User className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-500 italic">
+                          No user account linked
                         </span>
+                        <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">
+                          Unlinked
+                        </Badge>
                       </div>
                     )}
                   </div>
