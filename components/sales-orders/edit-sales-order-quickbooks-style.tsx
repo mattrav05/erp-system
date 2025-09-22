@@ -1597,6 +1597,32 @@ Best regards,
         </div>
       </div>
 
+      {/* Document Flow Tracker */}
+      {Object.keys(documentRelationships).length > 0 && (
+        <div className="px-4 py-2 border-b bg-blue-50">
+          <DocumentFlowTracker
+            relationships={documentRelationships}
+            currentDocument="salesOrder"
+            currentDocumentId={salesOrder.id}
+            onNavigate={(type, id) => {
+              if (type === 'estimate') {
+                // Navigate to specific estimate for editing
+                window.location.href = `/estimates?open=${id}`
+              } else if (type === 'salesOrder') {
+                // Navigate to specific sales order for editing
+                window.location.href = `/sales-orders?open=${id}`
+              } else if (type === 'invoice') {
+                // Navigate to specific invoice for editing (when available)
+                window.location.href = `/invoices?open=${id}`
+              } else if (type === 'purchaseOrder') {
+                // Navigate to specific purchase order for editing (when available)
+                window.location.href = `/purchase-orders?open=${id}`
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Form Content */}
       <div className="flex-1 overflow-auto p-6 bg-white">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -1724,31 +1750,6 @@ Best regards,
           </div>
         )}
 
-        {/* Document Flow Tracker */}
-        {Object.keys(documentRelationships).length > 0 && (
-          <div className="px-4 py-2 border-b bg-blue-50">
-            <DocumentFlowTracker
-              relationships={documentRelationships}
-              currentDocument="salesOrder"
-              currentDocumentId={salesOrder.id}
-          onNavigate={(type, id) => {
-            if (type === 'estimate') {
-              // Navigate to specific estimate for editing
-              window.location.href = `/estimates?open=${id}`
-            } else if (type === 'salesOrder') {
-              // Navigate to specific sales order for editing
-              window.location.href = `/sales-orders?open=${id}`
-            } else if (type === 'invoice') {
-              // Navigate to specific invoice for editing (when available)
-              window.location.href = `/invoices?open=${id}`
-            } else if (type === 'purchaseOrder') {
-              // Navigate to specific purchase order for editing (when available)
-              window.location.href = `/purchase-orders?open=${id}`
-            }
-          }}
-            />
-          </div>
-        )}
 
         {/* Bill To and Ship To Addresses */}
         <div className="grid grid-cols-2 gap-6">
