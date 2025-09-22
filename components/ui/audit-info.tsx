@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Clock, User } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface AuditInfoProps {
   lastEditedBy?: string | null
@@ -12,19 +14,78 @@ interface AuditInfoProps {
   showCreated?: boolean
 }
 
-export default function AuditInfo({ 
-  lastEditedBy, 
-  lastEditedAt, 
-  createdBy, 
+interface UserProfile {
+  id: string
+  email: string
+  first_name?: string
+  last_name?: string
+}
+
+export default function AuditInfo({
+  lastEditedBy,
+  lastEditedAt,
+  createdBy,
   createdAt,
   className = '',
   showCreated = false
 }: AuditInfoProps) {
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({})
+  const [loading, setLoading] = useState(false)
+
+  // Fetch user profiles for the user IDs we need
+  useEffect(() => {
+    const userIds = [lastEditedBy, createdBy].filter(Boolean) as string[]
+    if (userIds.length === 0) return
+
+    // Check if we already have all the user profiles we need
+    const needToFetch = userIds.filter(id => !userProfiles[id])
+    if (needToFetch.length === 0) return
+
+    setLoading(true)
+
+    const fetchUserProfiles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, first_name, last_name')
+          .in('id', needToFetch)
+
+        if (error) {
+          console.error('Error fetching user profiles:', error)
+          return
+        }
+
+        if (data) {
+          const profilesMap = data.reduce((acc, profile) => {
+            acc[profile.id] = profile
+            return acc
+          }, {} as Record<string, UserProfile>)
+
+          setUserProfiles(prev => ({ ...prev, ...profilesMap }))
+        }
+      } catch (error) {
+        console.error('Error fetching user profiles:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserProfiles()
+  }, [lastEditedBy, createdBy, userProfiles])
+
   const formatUserName = (userId: string | null): string => {
     if (!userId) return 'Unknown user'
-    
-    // For now, just show a shortened version of the UUID
-    // In a production system, you'd want to fetch actual user names
+
+    const profile = userProfiles[userId]
+    if (!profile && loading) return 'Loading...'
+    if (!profile) return `User ${userId.slice(-8)}`
+
+    // Build full name from first_name and last_name
+    const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+
+    // Return full name if available, otherwise email, otherwise fallback
+    if (fullName) return fullName
+    if (profile.email) return profile.email
     return `User ${userId.slice(-8)}`
   }
 
