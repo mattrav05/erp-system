@@ -37,6 +37,21 @@ interface UserProfile {
   last_sign_in_at?: string
 }
 
+interface SalesRep {
+  id: string
+  employee_code: string
+  first_name: string
+  last_name: string
+  email: string
+  phone?: string
+  commission_rate: number
+  territory?: string
+  hire_date?: string
+  is_active: boolean
+  notes?: string
+  user_id?: string
+}
+
 interface CreateUserModalProps {
   isOpen: boolean
   onClose: () => void
@@ -50,7 +65,13 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'user' as UserProfile['role']
+    role: 'user' as UserProfile['role'],
+    isSalesRep: false,
+    employeeCode: '',
+    phone: '',
+    commissionRate: 0,
+    territory: '',
+    hireDate: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
@@ -66,6 +87,14 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
     if (formData.password !== formData.confirmPassword) newErrors.push('Passwords do not match')
     if (!formData.firstName) newErrors.push('First name is required')
     if (!formData.lastName) newErrors.push('Last name is required')
+
+    // Sales rep specific validation
+    if (formData.isSalesRep) {
+      if (!formData.employeeCode) newErrors.push('Employee code is required for sales reps')
+      if (formData.commissionRate < 0 || formData.commissionRate > 100) {
+        newErrors.push('Commission rate must be between 0 and 100')
+      }
+    }
 
     setErrors(newErrors)
     return newErrors.length === 0
@@ -114,6 +143,34 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
           return
         }
 
+        // Create sales rep profile if user is marked as sales rep
+        if (formData.isSalesRep) {
+          try {
+            const { error: salesRepError } = await supabase
+              .from('sales_reps')
+              .insert({
+                employee_code: formData.employeeCode,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                email: formData.email,
+                phone: formData.phone || null,
+                commission_rate: formData.commissionRate,
+                territory: formData.territory || null,
+                hire_date: formData.hireDate || null,
+                is_active: true,
+                user_id: authData.user.id
+              })
+
+            if (salesRepError) {
+              console.warn('Sales rep profile creation failed:', salesRepError)
+              // Don't fail the entire user creation for this
+            }
+          } catch (error) {
+            console.warn('Sales rep table may not exist yet:', error)
+            // This is expected for new installations
+          }
+        }
+
         onUserCreated(profile)
         onClose()
 
@@ -124,7 +181,13 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
           confirmPassword: '',
           firstName: '',
           lastName: '',
-          role: 'user'
+          role: 'user',
+          isSalesRep: false,
+          employeeCode: '',
+          phone: '',
+          commissionRate: 0,
+          territory: '',
+          hireDate: ''
         })
       }
     } catch (error) {
@@ -256,6 +319,88 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
                 <option value="manager">Manager - Can manage data and view reports</option>
                 <option value="admin">Admin - Full system access and user management</option>
               </select>
+            </div>
+
+            {/* Sales Rep Assignment */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  type="checkbox"
+                  id="isSalesRep"
+                  checked={formData.isSalesRep}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isSalesRep: e.target.checked }))}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="isSalesRep" className="text-sm font-medium text-gray-700">
+                  This user is a Sales Representative
+                </label>
+              </div>
+
+              {formData.isSalesRep && (
+                <div className="space-y-4 pl-6 border-l-2 border-blue-100 bg-blue-50 p-4 rounded-md">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Employee Code *
+                      </label>
+                      <Input
+                        value={formData.employeeCode}
+                        onChange={(e) => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
+                        placeholder="EMP001"
+                        required={formData.isSalesRep}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone
+                      </label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Commission Rate (%)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={formData.commissionRate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, commissionRate: parseFloat(e.target.value) || 0 }))}
+                        placeholder="5.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Territory
+                      </label>
+                      <Input
+                        value={formData.territory}
+                        onChange={(e) => setFormData(prev => ({ ...prev, territory: e.target.value }))}
+                        placeholder="West Coast"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hire Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.hireDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, hireDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">
