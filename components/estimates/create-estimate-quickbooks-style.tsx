@@ -907,9 +907,38 @@ Best regards,
 
       if (lineItemsError) throw lineItemsError
 
+      // Update customer address if it was modified in the estimate
+      try {
+        const billToLines = billTo.split('\n').filter(line => line.trim())
+        const shipToLines = shipTo.split('\n').filter(line => line.trim())
+
+        // Extract address from billTo (skip company name on first line)
+        const billingAddress = billToLines.slice(1).join('\n').trim()
+        const shippingAddress = shipSameAsBill ? billingAddress : shipToLines.slice(1).join('\n').trim()
+
+        if (billingAddress || shippingAddress) {
+          const { error: customerUpdateError } = await supabase
+            .from('customers')
+            .update({
+              billing_address: billingAddress || null,
+              shipping_address: shippingAddress || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', customerId)
+
+          if (customerUpdateError) {
+            console.warn('Failed to update customer address:', customerUpdateError)
+            // Don't throw - estimate was saved successfully
+          }
+        }
+      } catch (addressUpdateError) {
+        console.warn('Error updating customer address:', addressUpdateError)
+        // Don't throw - estimate was saved successfully
+      }
+
       // Clear unsaved changes flag since we just saved successfully
       setHasUnsavedChanges(false)
-      
+
       onSave(estimateResult)
     } catch (error) {
       console.error('Error creating estimate:', error)
