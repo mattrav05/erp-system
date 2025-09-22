@@ -22,7 +22,8 @@ import {
   Crown,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  Users
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
