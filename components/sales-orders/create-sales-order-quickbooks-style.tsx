@@ -536,22 +536,55 @@ export default function CreateSalesOrderQuickBooksStyle({
     setIsSaving(true)
 
     try {
-      // Create sales order
+      // Parse address data for structured storage
+      const billToLines = billTo.split('\n').filter(line => line.trim())
+      const shipToLines = shipTo.split('\n').filter(line => line.trim())
+
+      // Create sales order with all required fields from database schema
       const salesOrderData = {
         so_number: soNumber,
         customer_id: customerId,
+        sales_rep_id: salesReps.find(rep => `${rep.first_name} ${rep.last_name}` === salesRep)?.id || null,
+        source_estimate_id: null, // Will be set if converting from estimate
+        estimate_number: null, // Will be set if converting from estimate
+        bill_to_company: billToLines[0] || null,
+        bill_to_contact: null, // Not captured in current form
+        bill_to_address_line_1: billToLines[1] || null,
+        bill_to_address_line_2: billToLines[2] || null,
+        bill_to_city: null, // Parse from address if needed
+        bill_to_state: null, // Parse from address if needed
+        bill_to_zip: null, // Parse from address if needed
+        bill_to_country: 'US', // Default to US
+        ship_to_company: shipToLines[0] || null,
+        ship_to_contact: null, // Not captured in current form
+        ship_to_address_line_1: shipToLines[1] || null,
+        ship_to_address_line_2: shipToLines[2] || null,
+        ship_to_city: null, // Parse from address if needed
+        ship_to_state: null, // Parse from address if needed
+        ship_to_zip: null, // Parse from address if needed
+        ship_to_country: 'US', // Default to US
+        ship_to_same_as_billing: shipSameAsBill,
         order_date: date,
         ship_date: shipDate || null,
-        reference_number: poNumber,
+        due_date: null, // Not captured in current form
+        reference_number: poNumber || null,
+        job_name: null, // Not captured in current form
         subtotal,
         tax_rate: defaultTaxRate,
         tax_amount: taxAmount,
+        shipping_amount: 0, // Default to 0
+        discount_amount: 0, // Default to 0
+        discount_percent: 0, // Default to 0
         total_amount: total,
-        internal_notes: memo,
-        customer_notes: customerMessage,
-        terms_and_conditions: terms,
-        status: 'PENDING',
-        last_edited_by: user?.id || null
+        status: 'PENDING' as const,
+        converted_to_invoice_id: null,
+        invoiced_at: null,
+        has_purchase_orders: false,
+        internal_notes: memo || null,
+        customer_notes: customerMessage || null,
+        terms_and_conditions: terms || null,
+        version: 1,
+        last_modified_by: user?.id || null
       }
 
       const { data: salesOrder, error: soError } = await supabase
@@ -572,18 +605,23 @@ export default function CreateSalesOrderQuickBooksStyle({
         .map((item, index) => ({
           sales_order_id: salesOrder.id,
           line_number: index + 1,
-          product_id: item.product_id,
-          item_code: item.item,
-          description: item.description,
-          quantity: item.qty,
-          unit_price: item.rate,
-          unit_of_measure: item.unit_of_measure,
-          is_taxable: item.is_taxable || false,
+          product_id: item.product_id || null,
+          item_code: item.item || null,
+          description: item.description || null,
+          quantity: item.qty || 1,
+          quantity_shipped: 0,
+          quantity_invoiced: 0,
+          quantity_reserved: 0,
+          unit_price: item.rate || 0,
+          unit_of_measure: item.unit_of_measure || 'each',
+          discount_percent: 0,
+          discount_amount: 0,
           tax_code: item.is_taxable ? 'TAX' : null,
           tax_rate: item.tax_rate || 0,
           tax_amount: item.tax_amount || 0,
-          line_total: item.amount,
-          fulfillment_status: 'pending' as const
+          line_total: item.amount || ((item.qty || 1) * (item.rate || 0)),
+          fulfillment_status: 'PENDING' as const,
+          source_estimate_line_id: null
         }))
 
       if (salesOrderLines.length > 0) {
@@ -592,6 +630,35 @@ export default function CreateSalesOrderQuickBooksStyle({
           .insert(salesOrderLines)
 
         if (linesError) throw linesError
+      }
+
+      // Update customer address if it was modified in the sales order
+      try {
+        const billToLines = billTo.split('\n').filter(line => line.trim())
+        const shipToLines = shipTo.split('\n').filter(line => line.trim())
+
+        // Extract address from billTo (skip company name on first line)
+        const billingAddress = billToLines.slice(1).join('\n').trim()
+        const shippingAddress = shipSameAsBill ? billingAddress : shipToLines.slice(1).join('\n').trim()
+
+        if (billingAddress || shippingAddress) {
+          const { error: customerUpdateError } = await supabase
+            .from('customers')
+            .update({
+              billing_address: billingAddress || null,
+              shipping_address: shippingAddress || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', customerId)
+
+          if (customerUpdateError) {
+            console.warn('Failed to update customer address:', customerUpdateError)
+            // Don't throw - sales order was saved successfully
+          }
+        }
+      } catch (addressUpdateError) {
+        console.warn('Error updating customer address:', addressUpdateError)
+        // Don't throw - sales order was saved successfully
       }
 
       // Clear unsaved changes flag since we just saved successfully
@@ -764,6 +831,28 @@ export default function CreateSalesOrderQuickBooksStyle({
                           setCustomer(c.company_name || c.name || '')
                           setCustomerId(c.id)
                           setCustomerDropdown(false)
+
+                          // Auto-populate address from customer record
+                          let billToText = c.company_name || c.name || ''
+                          if (c.billing_address) {
+                            billToText += '\n' + c.billing_address
+                          }
+                          if (c.phone) {
+                            billToText += '\nPhone: ' + c.phone
+                          }
+                          if (c.email) {
+                            billToText += '\nEmail: ' + c.email
+                          }
+                          setBillTo(billToText)
+
+                          // Set shipping address if different
+                          if (c.shipping_address && c.shipping_address !== c.billing_address) {
+                            setShipTo((c.company_name || c.name || '') + '\n' + c.shipping_address)
+                            setShipSameAsBill(false)
+                          } else {
+                            setShipTo(billToText)
+                            setShipSameAsBill(true)
+                          }
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-blue-50 text-sm"
                       >
