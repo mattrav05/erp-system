@@ -7,12 +7,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, Edit, Trash2, User, Phone, Mail, MapPin, DollarSign } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, User, Phone, Mail, MapPin, DollarSign, Link } from 'lucide-react'
 import SubWindow from '@/components/ui/sub-window'
 import ContextMenu from '@/components/ui/context-menu'
 import DatabaseSetupBanner from '@/components/estimates/database-setup-banner'
 
-type SalesRep = Database['public']['Tables']['sales_reps']['Row']
+type SalesRep = Database['public']['Tables']['sales_reps']['Row'] & {
+  linked_user?: {
+    id: string
+    email: string
+    first_name?: string
+    last_name?: string
+  }
+}
 
 export default function SalesRepsSettings() {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([])
@@ -49,7 +56,10 @@ export default function SalesRepsSettings() {
         rep.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rep.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rep.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        rep.territory?.toLowerCase().includes(searchTerm.toLowerCase())
+        rep.territory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (rep.linked_user?.first_name && rep.linked_user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rep.linked_user?.last_name && rep.linked_user.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rep.linked_user?.email && rep.linked_user.email.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
 
@@ -60,7 +70,15 @@ export default function SalesRepsSettings() {
     try {
       const { data, error } = await supabase
         .from('sales_reps')
-        .select('*')
+        .select(`
+          *,
+          linked_user:profiles!sales_reps_user_id_fkey(
+            id,
+            email,
+            first_name,
+            last_name
+          )
+        `)
         .order('first_name')
 
       if (error) {
@@ -374,6 +392,17 @@ export default function SalesRepsSettings() {
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="w-3 h-3 text-gray-400" />
                         <span className="text-gray-600">{rep.territory}</span>
+                      </div>
+                    )}
+                    {/* Linked User Account */}
+                    {rep.linked_user && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Link className="w-3 h-3 text-blue-400" />
+                        <span className="text-blue-600 font-medium">
+                          Linked to {rep.linked_user.first_name && rep.linked_user.last_name
+                            ? `${rep.linked_user.first_name} ${rep.linked_user.last_name}`
+                            : rep.linked_user.email}
+                        </span>
                       </div>
                     )}
                   </div>
