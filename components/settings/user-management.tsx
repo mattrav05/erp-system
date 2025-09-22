@@ -114,88 +114,53 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
     setIsSubmitting(true)
 
     try {
-      // Create user via Supabase Auth Admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: formData.firstName,
-          last_name: formData.lastName
-        }
+      // Call API route to create user (uses service role key on server side)
+      const response = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: formData.role,
+          isSalesRep: formData.isSalesRep,
+          employeeCode: formData.employeeCode,
+          phone: formData.phone,
+          commissionRate: formData.commissionRate,
+          territory: formData.territory,
+          hireDate: formData.hireDate
+        })
       })
 
-      if (authError) {
-        setErrors([authError.message])
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        setErrors([responseData.error || 'Failed to create user'])
         return
       }
 
-      if (authData.user) {
-        // Create profile entry
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            role: formData.role
-          })
-          .select()
-          .single()
+      // Success - user created
+      onUserCreated(responseData.user)
+      onClose()
 
-        if (profileError) {
-          setErrors([profileError.message])
-          return
-        }
-
-        // Create sales rep profile if user is marked as sales rep
-        if (formData.isSalesRep) {
-          try {
-            const { error: salesRepError } = await supabase
-              .from('sales_reps')
-              .insert({
-                employee_code: formData.employeeCode,
-                first_name: formData.firstName,
-                last_name: formData.lastName,
-                email: formData.email,
-                phone: formData.phone || null,
-                commission_rate: formData.commissionRate,
-                territory: formData.territory || null,
-                hire_date: formData.hireDate || null,
-                is_active: true,
-                user_id: authData.user.id
-              })
-
-            if (salesRepError) {
-              console.warn('Sales rep profile creation failed:', salesRepError)
-              // Don't fail the entire user creation for this
-            }
-          } catch (error) {
-            console.warn('Sales rep table may not exist yet:', error)
-            // This is expected for new installations
-          }
-        }
-
-        onUserCreated(profile)
-        onClose()
-
-        // Reset form
-        setFormData({
-          email: '',
-          password: '',
-          confirmPassword: '',
-          firstName: '',
-          lastName: '',
-          role: 'user',
-          isSalesRep: false,
-          employeeCode: '',
-          phone: '',
-          commissionRate: 0,
-          territory: '',
-          hireDate: ''
-        })
-      }
+      // Reset form
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        firstName: '',
+        lastName: '',
+        role: 'user',
+        isSalesRep: false,
+        employeeCode: '',
+        phone: '',
+        commissionRate: 0,
+        territory: '',
+        hireDate: ''
+      })
     } catch (error) {
       setErrors(['Failed to create user. Please try again.'])
       console.error('Error creating user:', error)
@@ -799,6 +764,7 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<UserProfile | null>(null)
 
+
   // Check if current user is admin
   const isCurrentUserAdmin = currentUserProfile?.role === 'admin'
 
@@ -850,19 +816,29 @@ export default function UserManagement() {
     if (!isCurrentUserAdmin) return
 
     try {
-      // Delete user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userToDelete.id)
+      // Call API route to delete user (uses service role key on server side)
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: userToDelete.id })
+      })
 
-      if (authError) {
-        console.error('Error deleting user from auth:', authError)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Error deleting user:', errorData.error)
+        alert('Failed to delete user: ' + (errorData.error || 'Unknown error'))
         return
       }
 
-      // Profile will be deleted by database cascade
+      // Success - remove user from local state
       setUsers(prev => prev.filter(user => user.id !== userToDelete.id))
       setDeleteConfirm(null)
+      alert('User deleted successfully')
     } catch (error) {
       console.error('Error deleting user:', error)
+      alert('Failed to delete user: Network error')
     }
   }
 
