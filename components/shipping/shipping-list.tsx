@@ -6,37 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/utils'
-import { Ship, Search, Download, RefreshCw, Eye, Trash2, Calendar, Package, AlertCircle, Settings, Key, X } from 'lucide-react'
+import { Ship, Search, Download, RefreshCw, Eye, Trash2, Calendar, Package, AlertCircle, Settings, Key, X, CheckCircle, PlayCircle, AlertTriangle } from 'lucide-react'
+import { shippingService, ShippingDeduction, SyncResult, ProcessingResult } from '@/lib/shipping-service'
+import { ShipStationConfigService } from '@/lib/shipstation-api'
 
-interface ShippingDeduction {
-  id: string
-  sync_date: string // Date that was synced (e.g., "2024-08-25")
-  total_orders_processed: number // How many ShipStation orders were in the batch
-  orders_with_our_skus: number // How many orders contained our inventory
-  items: ShippingItem[] // Aggregated SKU quantities for the day
-  total_deducted: number
-  status: 'pending' | 'processed' | 'error' | 'ignored'
-  error_message?: string
-  processed_at?: string
-  created_at: string
-}
-
-interface ShippingItem {
-  sku: string
-  product_name: string | null
-  total_quantity_shipped: number // Sum of all quantities for this SKU across all orders that day
-  orders_containing_sku: number // How many different orders had this SKU
-  unit_cost: number
-  total_cost: number
-  inventory_found: boolean
-  ignored_reason?: string // "not in inventory", "drop ship", etc.
-}
+// Remove duplicate interface - using the one from shipping-service
 
 interface ShipStationConfig {
-  api_key: string
-  api_secret: string
-  last_sync: string | null
-  auto_sync_enabled: boolean
+  apiKey: string
+  apiSecret: string
+  lastSync: string | null
+  autoSyncEnabled: boolean
+  syncHour: number
 }
 
 export default function ShippingList() {
@@ -47,11 +28,14 @@ export default function ShippingList() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'processed' | 'error' | 'ignored'>('all')
   const [showConfig, setShowConfig] = useState(false)
   const [config, setConfig] = useState<ShipStationConfig>({
-    api_key: '',
-    api_secret: '',
-    last_sync: null,
-    auto_sync_enabled: false
+    apiKey: '',
+    apiSecret: '',
+    lastSync: null,
+    autoSyncEnabled: false,
+    syncHour: 8
   })
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
+  const [processing, setProcessing] = useState<string | null>(null) // ID of deduction being processed
 
   useEffect(() => {
     loadDeductions()
@@ -86,105 +70,69 @@ export default function ShippingList() {
 
   const loadConfig = async () => {
     try {
-      // TODO: Load from company_settings or separate shipstation_config table
-      const savedConfig = localStorage.getItem('shipstation_config')
-      if (savedConfig) {
-        setConfig(JSON.parse(savedConfig))
+      // Try to load from database first
+      const { data } = await supabase
+        .from('shipstation_config')
+        .select('*')
+        .eq('is_active', true)
+        .single()
+
+      if (data) {
+        // Decode the stored configuration
+        const apiKey = Buffer.from(data.api_key_encrypted, 'base64').toString('utf-8')
+        const apiSecret = Buffer.from(data.api_secret_encrypted, 'base64').toString('utf-8')
+
+        setConfig({
+          apiKey,
+          apiSecret,
+          lastSync: data.last_sync_date,
+          autoSyncEnabled: data.auto_sync_enabled || false,
+          syncHour: data.sync_hour || 8
+        })
+      } else {
+        // Fallback to localStorage for backwards compatibility
+        const savedConfig = localStorage.getItem('shipstation_config')
+        if (savedConfig) {
+          const parsed = JSON.parse(savedConfig)
+          setConfig({
+            apiKey: parsed.api_key || '',
+            apiSecret: parsed.api_secret || '',
+            lastSync: parsed.last_sync || null,
+            autoSyncEnabled: parsed.auto_sync_enabled || false,
+            syncHour: parsed.sync_hour || 8
+          })
+        }
       }
     } catch (error) {
       console.error('Error loading ShipStation config:', error)
+      // Try localStorage fallback
+      try {
+        const savedConfig = localStorage.getItem('shipstation_config')
+        if (savedConfig) {
+          const parsed = JSON.parse(savedConfig)
+          setConfig({
+            apiKey: parsed.api_key || '',
+            apiSecret: parsed.api_secret || '',
+            lastSync: parsed.last_sync || null,
+            autoSyncEnabled: parsed.auto_sync_enabled || false,
+            syncHour: parsed.sync_hour || 8
+          })
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError)
+      }
     }
   }
 
   const loadDeductions = async () => {
     try {
-      // TODO: Load from actual shipping_deductions table
-      // Sample data: DAILY SKU TABULATION from ShipStation sync
-      console.log('Loading fallback shipping data - Daily SKU tabulation from ShipStation')
-      const sampleDeductions: ShippingDeduction[] = [
-        {
-          id: '1',
-          sync_date: '2024-08-25', // This day's shipments
-          total_orders_processed: 47, // Total ShipStation orders that day
-          orders_with_our_skus: 12, // Orders containing our inventory
-          items: [
-            {
-              sku: 'SKU-001',
-              product_name: 'Widget A',
-              total_quantity_shipped: 8, // Total across all orders
-              orders_containing_sku: 5, // Appeared in 5 different orders
-              unit_cost: 15.50,
-              total_cost: 124.00, // 8 * 15.50
-              inventory_found: true
-            },
-            {
-              sku: 'SKU-002', 
-              product_name: 'Widget B',
-              total_quantity_shipped: 15, // Total across all orders
-              orders_containing_sku: 7, // Appeared in 7 different orders  
-              unit_cost: 22.75,
-              total_cost: 341.25, // 15 * 22.75
-              inventory_found: true
-            },
-            {
-              sku: 'SKU-003',
-              product_name: 'Gadget C', 
-              total_quantity_shipped: 3, // Total across all orders
-              orders_containing_sku: 2, // Appeared in 2 different orders
-              unit_cost: 45.00,
-              total_cost: 135.00, // 3 * 45.00
-              inventory_found: true
-            }
-          ],
-          total_deducted: 600.25, // Sum of all item costs
-          status: 'pending',
-          created_at: '2024-08-26T08:30:00Z'
-        },
-        {
-          id: '2',
-          sync_date: '2024-08-24', // Previous day
-          total_orders_processed: 52,
-          orders_with_our_skus: 18, 
-          items: [
-            {
-              sku: 'SKU-001',
-              product_name: 'Widget A',
-              total_quantity_shipped: 12,
-              orders_containing_sku: 8,
-              unit_cost: 15.50,
-              total_cost: 186.00,
-              inventory_found: true
-            },
-            {
-              sku: 'SKU-002',
-              product_name: 'Widget B', 
-              total_quantity_shipped: 22,
-              orders_containing_sku: 11,
-              unit_cost: 22.75,
-              total_cost: 500.50,
-              inventory_found: true
-            }
-          ],
-          total_deducted: 686.50,
-          status: 'processed',
-          processed_at: '2024-08-25T09:15:00Z',
-          created_at: '2024-08-25T08:45:00Z'
-        },
-        {
-          id: '3',
-          sync_date: '2024-08-23',
-          total_orders_processed: 38,
-          orders_with_our_skus: 0, // No orders with our SKUs that day
-          items: [], // Empty - all were drop ships or unknown SKUs
-          total_deducted: 0,
-          status: 'ignored',
-          created_at: '2024-08-24T08:30:00Z'
-        }
-      ]
-      
-      setDeductions(sampleDeductions)
+      console.log('Loading shipping deductions from database...')
+      const deductions = await shippingService.loadDeductions()
+      setDeductions(deductions)
     } catch (error) {
       console.error('Error loading shipping deductions:', error)
+      // Fallback to empty array if database tables don't exist yet
+      setDeductions([])
     } finally {
       setLoading(false)
     }
@@ -197,73 +145,61 @@ export default function ShippingList() {
   }
 
   const syncWithShipStation = async () => {
-    if (!config.api_key || !config.api_secret) {
+    if (!config.apiKey || !config.apiSecret) {
       alert('Please configure ShipStation API keys first')
       setShowConfig(true)
       return
     }
 
     setIsRefreshing(true)
+    setSyncResult(null)
+
     try {
-      console.log('Syncing with ShipStation...')
-      console.log('API Key:', config.api_key.substring(0, 8) + '...')
-      
-      // Get yesterday's date for sync
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      const shipDateStart = yesterday.toISOString().split('T')[0]
-      const shipDateEnd = shipDateStart // Same day
-      
-      console.log(`Syncing shipments for date: ${shipDateStart}`)
-      
-      // TODO: Replace with actual ShipStation API call
-      /*
-      const response = await fetch('https://ssapi.shipstation.com/shipments', {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Basic ' + btoa(config.api_key + ':' + config.api_secret),
-          'Content-Type': 'application/json'
-        },
-        params: {
-          shipDateStart: shipDateStart + 'T00:00:00.000Z',
-          shipDateEnd: shipDateEnd + 'T23:59:59.999Z',
-          pageSize: 500 // Max allowed by ShipStation
-        }
-      })
-      const shipments = await response.json()
-      */
-      
-      // For now, simulate API call with enhanced data
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Simulate processing logic that would happen with real API data:
-      console.log('Processing shipments...')
-      console.log('- Filtering for known SKUs only')
-      console.log('- Checking for duplicate ShipStation order IDs')
-      console.log('- Calculating inventory costs from ERP')
-      console.log('- Creating deduction records for review')
-      
-      // Simulate duplicate detection
-      const existingOrderIds = deductions.map(d => (d as any).shipstation_order_id)
-      console.log('Existing order IDs in system:', existingOrderIds.length)
-      console.log('Duplicate detection: ACTIVE')
-      
-      // Update last sync time
-      const updatedConfig = { ...config, last_sync: new Date().toISOString() }
-      setConfig(updatedConfig)
-      localStorage.setItem('shipstation_config', JSON.stringify(updatedConfig))
-      
-      // Reload deductions (would normally fetch new processed data from database)
-      await loadDeductions()
-      
-      console.log('Sync completed successfully')
-      console.log('- New deductions created for review')
-      console.log('- Duplicates prevented')
-      console.log('- Ready for inventory deduction approval')
-      
+      console.log('Starting ShipStation sync...')
+
+      // Initialize the shipping service if needed
+      await shippingService.initialize()
+
+      // Test connection first
+      const connectionTest = await shippingService.testConnection()
+      if (!connectionTest.success) {
+        throw new Error(`Connection failed: ${connectionTest.error}`)
+      }
+
+      // Sync yesterday's shipments
+      const result = await shippingService.syncYesterday()
+      setSyncResult(result)
+
+      if (result.success) {
+        console.log('Sync completed successfully:', result)
+
+        // Show success message
+        const message = result.uniqueSkus > 0
+          ? `Sync completed! Found ${result.uniqueSkus} SKUs across ${result.ordersWithSkus} orders. Total value: ${formatCurrency(result.totalValue)}`
+          : `Sync completed! No inventory items found in ${result.processedOrders} shipments.`
+
+        alert(message)
+
+        // Reload deductions to show new data
+        await loadDeductions()
+      } else {
+        throw new Error(result.error || 'Sync failed')
+      }
+
     } catch (error) {
       console.error('Error syncing with ShipStation:', error)
-      alert('Sync failed: ' + (error as any).message)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown sync error'
+      alert(`Sync failed: ${errorMessage}`)
+
+      setSyncResult({
+        success: false,
+        error: errorMessage,
+        processedOrders: 0,
+        ordersWithSkus: 0,
+        uniqueSkus: 0,
+        totalValue: 0,
+        duplicatesSkipped: 0
+      })
     } finally {
       setIsRefreshing(false)
     }
@@ -271,12 +207,74 @@ export default function ShippingList() {
 
   const saveConfig = async () => {
     try {
-      // TODO: Save to database instead of localStorage
-      localStorage.setItem('shipstation_config', JSON.stringify(config))
+      await ShipStationConfigService.saveConfig({
+        apiKey: config.apiKey,
+        apiSecret: config.apiSecret,
+        autoSyncEnabled: config.autoSyncEnabled,
+        syncHour: config.syncHour
+      })
+
       setShowConfig(false)
-      console.log('ShipStation configuration saved')
+      console.log('ShipStation configuration saved to database')
+      alert('Configuration saved successfully!')
+
+      // Test the connection with new config
+      const testResult = await shippingService.testConnection()
+      if (!testResult.success) {
+        alert(`Warning: Connection test failed: ${testResult.error}`)
+      }
+
     } catch (error) {
       console.error('Error saving config:', error)
+      alert('Failed to save configuration: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  // Add function to process a pending deduction
+  const processDeduction = async (deductionId: string) => {
+    if (!confirm('This will deduct inventory quantities and cannot be undone. Continue?')) {
+      return
+    }
+
+    setProcessing(deductionId)
+    try {
+      const result = await shippingService.processDeduction(deductionId)
+
+      if (result.success) {
+        alert(`Successfully processed! ${result.processed_items} items updated. Total cost deducted: ${formatCurrency(result.total_cost_deducted)}`)
+        await loadDeductions() // Refresh the list
+      } else {
+        alert(`Processing failed: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error processing deduction:', error)
+      alert('Processing failed: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  // Add function to ignore a deduction
+  const ignoreDeduction = async (deductionId: string) => {
+    if (!confirm('Mark this deduction as ignored? This will not affect inventory.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('shipping_deductions')
+        .update({
+          status: 'ignored',
+          error_message: 'Manually ignored by user'
+        })
+        .eq('id', deductionId)
+
+      if (error) throw error
+
+      await loadDeductions() // Refresh the list
+    } catch (error) {
+      console.error('Error ignoring deduction:', error)
+      alert('Failed to ignore deduction')
     }
   }
 
@@ -351,11 +349,33 @@ export default function ShippingList() {
       </div>
 
       {/* Last Sync Info */}
-      {config.last_sync && (
+      {config.lastSync && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 text-sm text-blue-800">
             <Calendar className="w-4 h-4" />
-            <span>Last synced: {new Date(config.last_sync).toLocaleString()}</span>
+            <span>Last synced: {new Date(config.lastSync).toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Result Info */}
+      {syncResult && (
+        <div className={`border rounded-lg p-4 ${
+          syncResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex items-center gap-2 text-sm">
+            {syncResult.success ? (
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+            )}
+            <span className={syncResult.success ? 'text-green-800' : 'text-red-800'}>
+              {syncResult.success ? (
+                `Sync completed: ${syncResult.uniqueSkus} SKUs found, ${syncResult.ordersWithSkus} orders processed`
+              ) : (
+                `Sync failed: ${syncResult.error}`
+              )}
+            </span>
           </div>
         </div>
       )}
@@ -525,6 +545,59 @@ export default function ShippingList() {
                     </div>
                   ))}
                 </div>
+
+                {/* Action buttons for pending deductions */}
+                {deduction.status === 'pending' && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t">
+                    <Button
+                      size="sm"
+                      onClick={() => processDeduction(deduction.id)}
+                      disabled={processing === deduction.id}
+                      className="bg-green-600 hover:bg-green-700 flex-1"
+                    >
+                      {processing === deduction.id ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <PlayCircle className="w-3 h-3 mr-1" />
+                          Process Deduction
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => ignoreDeduction(deduction.id)}
+                      disabled={processing === deduction.id}
+                      className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Ignore
+                    </Button>
+                  </div>
+                )}
+
+                {/* Status info for processed/ignored */}
+                {deduction.status === 'processed' && deduction.processed_at && (
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="flex items-center gap-2 text-xs text-green-700">
+                      <CheckCircle className="w-3 h-3" />
+                      Processed on {new Date(deduction.processed_at).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+
+                {deduction.status === 'error' && deduction.error_message && (
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="flex items-center gap-2 text-xs text-red-700">
+                      <AlertTriangle className="w-3 h-3" />
+                      Error: {deduction.error_message}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -559,35 +632,54 @@ export default function ShippingList() {
                 </label>
                 <Input
                   type="text"
-                  value={config.api_key}
-                  onChange={(e) => setConfig(prev => ({...prev, api_key: e.target.value}))}
+                  value={config.apiKey}
+                  onChange={(e) => setConfig(prev => ({...prev, apiKey: e.target.value}))}
                   placeholder="Enter ShipStation API Key"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   API Secret
                 </label>
                 <Input
                   type="password"
-                  value={config.api_secret}
-                  onChange={(e) => setConfig(prev => ({...prev, api_secret: e.target.value}))}
+                  value={config.apiSecret}
+                  onChange={(e) => setConfig(prev => ({...prev, apiSecret: e.target.value}))}
                   placeholder="Enter ShipStation API Secret"
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="auto_sync"
-                  checked={config.auto_sync_enabled}
-                  onChange={(e) => setConfig(prev => ({...prev, auto_sync_enabled: e.target.checked}))}
+                  checked={config.autoSyncEnabled}
+                  onChange={(e) => setConfig(prev => ({...prev, autoSyncEnabled: e.target.checked}))}
                 />
                 <label htmlFor="auto_sync" className="text-sm text-gray-700">
                   Enable automatic daily sync
                 </label>
               </div>
+
+              {config.autoSyncEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sync Hour (24-hour format)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={config.syncHour}
+                    onChange={(e) => setConfig(prev => ({...prev, syncHour: parseInt(e.target.value) || 8}))}
+                    placeholder="8"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Hour of the day to run automatic sync (0-23)
+                  </p>
+                </div>
+              )}
               
               <div className="bg-gray-50 p-3 rounded text-xs text-gray-600">
                 <p className="font-medium mb-1">Auto-Sync Protection:</p>
