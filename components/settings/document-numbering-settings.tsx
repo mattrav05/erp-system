@@ -49,6 +49,8 @@ export default function DocumentNumberingSettings() {
   const [isSaving, setIsSaving] = useState(false)
   const [editingConfig, setEditingConfig] = useState<NumberingConfig | null>(null)
   const [newStartNumber, setNewStartNumber] = useState('')
+  const [newPrefix, setNewPrefix] = useState('')
+  const [newFullFormat, setNewFullFormat] = useState('')
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [isValidating, setIsValidating] = useState(false)
 
@@ -147,66 +149,53 @@ export default function DocumentNumberingSettings() {
     }
   }
 
-  const validateNewNumber = async (docType: string, startNumber: number): Promise<ValidationResult> => {
+  const validateNewFormat = async (docType: string, fullFormat: string): Promise<ValidationResult> => {
     const docTypeInfo = documentTypes.find(dt => dt.type === docType)
     if (!docTypeInfo) {
       return { isValid: false, message: 'Invalid document type' }
     }
 
+    // Validate format contains placeholders for numbers
+    if (!fullFormat.includes('#') && !fullFormat.match(/\d/)) {
+      return { isValid: false, message: 'Format must contain either # placeholders or numbers' }
+    }
+
     try {
-      // Check if the proposed starting number conflicts with existing documents
-      const proposedFormat = `${docTypeInfo.prefix}-${String(startNumber).padStart(6, '0')}`
-      
-      const { data: existingDoc, error } = await supabase
+      // Get the highest existing number to suggest next available
+      const { data: allDocs, error: allError } = await supabase
         .from(docTypeInfo.tableName)
         .select(docTypeInfo.numberColumn)
-        .eq(docTypeInfo.numberColumn, proposedFormat)
-        .single()
+        .order(docTypeInfo.numberColumn, { ascending: false })
+        .limit(5)
 
-      if (error && error.code !== 'PGRST116') {
-        throw error
-      }
+      if (allError) throw allError
 
-      if (existingDoc) {
-        // Number exists, find the next available number
-        const { data: allDocs, error: allError } = await supabase
-          .from(docTypeInfo.tableName)
-          .select(docTypeInfo.numberColumn)
-          .gte(docTypeInfo.numberColumn, proposedFormat)
-          .order(docTypeInfo.numberColumn, { ascending: true })
+      let highestNumber = 0
+      const existingNumbers: string[] = []
 
-        if (allError) throw allError
-
-        let suggestedNumber = startNumber
-        const conflictingNumbers: string[] = []
-
-        if (allDocs) {
-          for (const doc of allDocs) {
-            const docNumber = (doc as any)[docTypeInfo.numberColumn]
-            if (docNumber) {
-              conflictingNumbers.push(docNumber)
-              const match = docNumber.match(/(\d+)$/)
-              if (match) {
-                const existingNum = parseInt(match[1])
-                if (existingNum >= suggestedNumber) {
-                  suggestedNumber = existingNum + 1
-                }
+      if (allDocs) {
+        for (const doc of allDocs) {
+          const docNumber = (doc as any)[docTypeInfo.numberColumn]
+          if (docNumber) {
+            existingNumbers.push(docNumber)
+            // Extract number from any format (EST-000123, INV123, SO-2024-001, etc.)
+            const match = docNumber.match(/(\d+)(?!.*\d)/) // Last number in string
+            if (match) {
+              const num = parseInt(match[1])
+              if (num > highestNumber) {
+                highestNumber = num
               }
             }
           }
         }
-
-        return {
-          isValid: false,
-          suggestedNumber,
-          conflictingNumbers: conflictingNumbers.slice(0, 5), // Show first 5 conflicts
-          message: `Number ${proposedFormat} already exists. Suggested starting number: ${suggestedNumber}`
-        }
       }
+
+      const suggestedStartNumber = highestNumber + 1
 
       return {
         isValid: true,
-        message: `Number ${proposedFormat} is available and can be used as starting point`
+        suggestedNumber: suggestedStartNumber,
+        message: `Format will be applied. Current highest number found: ${highestNumber}. Suggested next: ${suggestedStartNumber}`
       }
     } catch (error) {
       console.error('Error validating number:', error)
@@ -217,47 +206,59 @@ export default function DocumentNumberingSettings() {
   const handleStartEdit = (config: NumberingConfig) => {
     setEditingConfig(config)
     setNewStartNumber(String(config.current_number + 1))
+    setNewPrefix(config.prefix)
+    setNewFullFormat(config.format || `${config.prefix}-######`)
     setValidationResult(null)
   }
 
-  const handleValidateNumber = async () => {
-    if (!editingConfig || !newStartNumber) return
+  const handleValidateFormat = async () => {
+    if (!editingConfig || !newFullFormat) return
 
     setIsValidating(true)
-    const startNum = parseInt(newStartNumber)
-    if (isNaN(startNum) || startNum < 1) {
-      setValidationResult({
-        isValid: false,
-        message: 'Please enter a valid number greater than 0'
-      })
-      setIsValidating(false)
-      return
-    }
 
-    const result = await validateNewNumber(editingConfig.document_type, startNum)
+    const result = await validateNewFormat(editingConfig.document_type, newFullFormat)
     setValidationResult(result)
     setIsValidating(false)
   }
 
-  const handleApplyNewNumber = async () => {
+  const generateSampleFormat = (format: string, number: number = 1): string => {
+    // Replace # placeholders with padded numbers
+    let result = format
+    const hashCount = (format.match(/#/g) || []).length
+    if (hashCount > 0) {
+      const paddedNumber = String(number).padStart(hashCount, '0')
+      result = format.replace(/#+/, paddedNumber)
+    }
+    return result
+  }
+
+  const handleApplyNewFormat = async () => {
     if (!editingConfig || !validationResult?.isValid) return
 
     setIsSaving(true)
     try {
-      // Use the database function to reset numbering
-      const { error } = await supabase.rpc('reset_document_numbering', {
-        doc_type: editingConfig.document_type,
-        new_start_number: parseInt(newStartNumber)
-      })
+      // Update company settings with new format and starting number
+      const startNum = validationResult.suggestedNumber || parseInt(newStartNumber) || 1
+
+      const updateData: any = {}
+      updateData[`${editingConfig.document_type}_prefix`] = newPrefix
+      updateData[`${editingConfig.document_type}_next_number`] = startNum
+
+      const { error } = await supabase
+        .from('company_settings')
+        .update(updateData)
+        .eq('is_active', true)
 
       if (error) throw error
 
       // Refresh the configs to show the updated numbers
       await loadCurrentConfigs()
 
-      alert(`Successfully set next ${editingConfig.document_type} number to start from ${newStartNumber}`)
+      alert(`Successfully updated ${editingConfig.document_type} numbering format and starting number`)
       setEditingConfig(null)
       setNewStartNumber('')
+      setNewPrefix('')
+      setNewFullFormat('')
       setValidationResult(null)
     } catch (error: any) {
       console.error('Error applying new number:', error)
@@ -308,7 +309,7 @@ export default function DocumentNumberingSettings() {
 
   const formatCurrentNumber = (config: NumberingConfig) => {
     const nextNumber = config.current_number + 1
-    return `${config.prefix}-${String(nextNumber).padStart(6, '0')}`
+    return generateSampleFormat(config.format || `${config.prefix}-######`, nextNumber)
   }
 
   if (isLoading) {
@@ -376,15 +377,32 @@ export default function DocumentNumberingSettings() {
                       className="flex items-center gap-2"
                     >
                       <RotateCcw className="w-4 h-4" />
-                      Reset Numbering
+                      Edit Numbering
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          New Starting Number
+                          Document Format
+                        </label>
+                        <Input
+                          value={newFullFormat}
+                          onChange={(e) => {
+                            setNewFullFormat(e.target.value)
+                            setValidationResult(null)
+                          }}
+                          placeholder="e.g., EST-######, INV-2024-###"
+                          className="font-mono"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Use # for number placeholders (e.g., ###### = 000001)
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Starting Number
                         </label>
                         <Input
                           type="number"
@@ -398,16 +416,27 @@ export default function DocumentNumberingSettings() {
                           className="font-mono"
                         />
                       </div>
-                      <div className="pt-6">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleValidateNumber}
-                          disabled={isValidating || !newStartNumber}
-                        >
-                          {isValidating ? 'Checking...' : 'Validate'}
-                        </Button>
+                    </div>
+
+                    {/* Format Preview */}
+                    {newFullFormat && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-sm text-blue-800">
+                          <span className="font-medium">Preview:</span> {generateSampleFormat(newFullFormat, parseInt(newStartNumber) || 1)}
+                        </div>
                       </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleValidateFormat}
+                        disabled={isValidating || !newFullFormat}
+                        className="flex items-center gap-2"
+                      >
+                        {isValidating ? 'Checking...' : 'Validate Format'}
+                      </Button>
                     </div>
 
                     {/* Validation Result */}
@@ -464,7 +493,7 @@ export default function DocumentNumberingSettings() {
                     <div className="flex items-center gap-2 pt-2">
                       <Button
                         size="sm"
-                        onClick={handleApplyNewNumber}
+                        onClick={handleApplyNewFormat}
                         disabled={!validationResult?.isValid || isSaving}
                         className="bg-green-600 hover:bg-green-700"
                       >
@@ -477,6 +506,8 @@ export default function DocumentNumberingSettings() {
                         onClick={() => {
                           setEditingConfig(null)
                           setNewStartNumber('')
+                          setNewPrefix('')
+                          setNewFullFormat('')
                           setValidationResult(null)
                         }}
                       >

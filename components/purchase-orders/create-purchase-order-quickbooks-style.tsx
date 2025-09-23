@@ -523,21 +523,9 @@ export default function CreatePurchaseOrderQuickBooksStyle({
 
   const generatePONumber = async () => {
     try {
-      const { data } = await supabase
-        .from('purchase_orders')
-        .select('po_number')
-        .order('po_number', { ascending: false })
-        .limit(1)
-
-      let nextNumber = 1
-      if (data && data.length > 0 && data[0].po_number) {
-        const lastNumber = data[0].po_number
-        if (lastNumber.match(/^PO-\d{6}$/)) {
-          nextNumber = parseInt(lastNumber.split('-')[1]) + 1
-        }
-      }
-
-      const newNumber = `PO-${String(nextNumber).padStart(6, '0')}`
+      // Import the new document numbering function
+      const { getNextDocumentNumber } = await import('@/lib/document-numbering')
+      const newNumber = await getNextDocumentNumber('purchase_order')
       setPONumber(newNumber)
       return newNumber
     } catch (error) {
