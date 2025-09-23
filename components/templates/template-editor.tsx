@@ -159,7 +159,7 @@ const defaultTemplate: TemplateSettings = {
   headerTextColor: '#000000',
   headerHeight: 120,
   
-  documentTitleText: 'ESTIMATE',
+  documentTitleText: 'DOCUMENT',
   documentTitleSize: 20,
   documentTitleColor: '#000000',
   documentTitlePosition: 'right',
@@ -235,7 +235,16 @@ const defaultTemplate: TemplateSettings = {
 }
 
 export default function TemplateEditor({ onClose, templateType = 'estimate', currentTemplateId }: TemplateEditorProps) {
-  const [template, setTemplate] = useState<TemplateSettings>(defaultTemplate)
+  // Create default template with correct document type
+  const getDefaultTemplate = (): TemplateSettings => {
+    const documentTitle = templateType.toUpperCase().replace(/_/g, ' ')
+    return {
+      ...defaultTemplate,
+      documentTitleText: documentTitle
+    }
+  }
+
+  const [template, setTemplate] = useState<TemplateSettings>(getDefaultTemplate())
   const [activeSection, setActiveSection] = useState('basic')
   const [showPreview, setShowPreview] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -263,6 +272,13 @@ export default function TemplateEditor({ onClose, templateType = 'estimate', cur
       loadTemplate(currentTemplateId)
     }
   }, [currentTemplateId])
+
+  // Update template when templateType changes
+  useEffect(() => {
+    if (!currentTemplateId) {
+      setTemplate(getDefaultTemplate())
+    }
+  }, [templateType])
 
   const fetchTemplates = async () => {
     const { data } = await supabase
