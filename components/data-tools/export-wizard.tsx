@@ -434,7 +434,7 @@ export default function ExportWizard() {
               <Checkbox
                 id="includeHeaders"
                 checked={includeHeaders}
-                onCheckedChange={setIncludeHeaders}
+                onCheckedChange={(checked) => setIncludeHeaders(checked === true)}
               />
               <label htmlFor="includeHeaders" className="text-sm">
                 Include column headers in export

@@ -62,9 +62,11 @@ interface ExportJob {
   completedAt?: string
 }
 
+type Job = ImportJob | ExportJob
+
 export default function JobHistory() {
-  const [jobs, setJobs] = useState<(ImportJob | ExportJob)[]>([])
-  const [filteredJobs, setFilteredJobs] = useState<(ImportJob | ExportJob)[]>([])
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')

@@ -836,7 +836,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
         const inventoryItem = inventory.find(inv => inv.product_id === product.id)
         
         // Use sales price from inventory if available, otherwise from product, otherwise 0
-        const salesPrice = inventoryItem?.sales_price || product.sales_price || 0
+        const salesPrice = inventoryItem?.sales_price || product.unit_price || 0
         const defaultQty = item.qty || 1 // Use current qty or default to 1
         
         // Get tax code from inventory if set

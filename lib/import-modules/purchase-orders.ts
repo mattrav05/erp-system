@@ -1,6 +1,6 @@
 import { ImportModule, ImportResult, ValidationError, ImportPreview, FieldMapping, ImportJobData } from '../import-service';
 import { supabase } from '../supabase';
-import { validateRequired, validateEmail, validateDate, validateNumber, validateChoice } from '../csv-utils';
+import { validateRequired, validateDate, validateNumber, validateChoice } from '../csv-utils';
 
 interface PurchaseOrderImportData {
   // Purchase Order Header
@@ -198,7 +198,10 @@ export class PurchaseOrderImportModule implements ImportModule {
       const rowNum = i + 2; // Account for header row
 
       // Required fields
-      errors.push(...validateRequired(row.po_number, 'Purchase Order Number', rowNum));
+      const poNumberError = validateRequired(row.po_number, 'Purchase Order Number');
+      if (poNumberError) {
+        errors.push({ ...poNumberError, row: rowNum });
+      }
 
       // Vendor validation - require either ID or name
       if (!row.vendor_id && !row.vendor_name) {

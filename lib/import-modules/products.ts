@@ -36,7 +36,7 @@ export class ProductImportModule implements ImportModule {
 
   async validateData(data: any[], fieldMappings: FieldMapping[]): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];
-    const fieldMap = new Map(fieldMappings.map(fm => [fm.sourceField, fm.targetField]));
+    const fieldMap = new Map(fieldMappings.map(fm => [fm.csvColumn, fm.dbField]));
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -49,7 +49,6 @@ export class ProductImportModule implements ImportModule {
             row: i + 1,
             field: field.key,
             message: `Required field '${field.label}' is missing or empty`,
-            severity: 'error'
           });
         }
       }
@@ -63,7 +62,6 @@ export class ProductImportModule implements ImportModule {
             row: i + 1,
             field: fieldKey,
             message: `'${this.availableFields.find(f => f.key === fieldKey)?.label}' must be a valid number`,
-            severity: 'error'
           });
         }
       }
@@ -79,8 +77,7 @@ export class ProductImportModule implements ImportModule {
               row: i + 1,
               field: fieldKey,
               message: `'${this.availableFields.find(f => f.key === fieldKey)?.label}' must be true/false, yes/no, or 1/0`,
-              severity: 'error'
-            });
+              });
           }
         }
       }
@@ -94,7 +91,6 @@ export class ProductImportModule implements ImportModule {
             row: i + 1,
             field: 'item_type',
             message: `Item Type must be one of: ${validTypes.join(', ')}`,
-            severity: 'error'
           });
         }
       }
@@ -110,7 +106,6 @@ export class ProductImportModule implements ImportModule {
             row: i + 1,
             field: 'sku',
             message: `Duplicate SKU found at rows ${i + 1} and ${duplicateIndex + 1}`,
-            severity: 'error'
           });
         }
       }
@@ -125,8 +120,7 @@ export class ProductImportModule implements ImportModule {
             errors.push({
               row: i + 1,
               field: fieldKey,
-              message: `'${this.availableFields.find(f => f.key === fieldKey)?.label}' must be between 0 and 100`,
-              severity: 'warning'
+              message: `'${this.availableFields.find(f => f.key === fieldKey)?.label}' must be between 0 and 100`
             });
           }
         }
@@ -141,7 +135,6 @@ export class ProductImportModule implements ImportModule {
             row: i + 1,
             field: 'qb_last_sync',
             message: 'QB Last Sync must be a valid date format',
-            severity: 'error'
           });
         }
       }
@@ -166,7 +159,7 @@ export class ProductImportModule implements ImportModule {
       results: []
     };
 
-    const fieldMap = new Map(fieldMappings.map(fm => [fm.sourceField, fm.targetField]));
+    const fieldMap = new Map(fieldMappings.map(fm => [fm.csvColumn, fm.dbField]));
 
     // Helper function to get mapped value
     const getValue = (row: any, targetField: string) => {
@@ -225,7 +218,7 @@ export class ProductImportModule implements ImportModule {
           .single();
 
         let result;
-        if (existing && jobData.duplicateStrategy === 'update') {
+        if (existing && (jobData as any).duplicateStrategy === 'update') {
           // Update existing product
           const { data: updated, error } = await supabase
             .from('products')
@@ -244,7 +237,7 @@ export class ProductImportModule implements ImportModule {
             record: result,
             rowNumber: i + 1
           });
-        } else if (existing && jobData.duplicateStrategy === 'skip') {
+        } else if (existing && (jobData as any).duplicateStrategy === 'skip') {
           // Skip existing product
           results.results.push({
             action: 'skipped',
@@ -255,7 +248,7 @@ export class ProductImportModule implements ImportModule {
           continue;
         } else {
           // Insert new product (or duplicate with 'create_new' strategy)
-          if (existing && jobData.duplicateStrategy === 'create_new') {
+          if (existing && (jobData as any).duplicateStrategy === 'create_new') {
             // Modify SKU to make it unique
             productData.sku = `${productData.sku}_${Date.now()}`;
           }
