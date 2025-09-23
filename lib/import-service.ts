@@ -17,6 +17,7 @@ export interface ValidationError {
   row: number;
   field: string;
   message: string;
+  severity?: 'error' | 'warning';
 }
 
 export interface FieldMapping {

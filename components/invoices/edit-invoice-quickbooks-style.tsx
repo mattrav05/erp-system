@@ -22,10 +22,8 @@ type Customer = Database['public']['Tables']['customers']['Row'] & {
   payment_terms?: { name: string } | null
 }
 type Product = Database['public']['Tables']['products']['Row']
-type Invoice = Database['public']['Tables']['invoices']['Row'] & {
-  customers?: { company_name: string; contact_name: string | null }
-}
-type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
+type Invoice = any
+type InvoiceTemplate = any
 type SalesRep = Database['public']['Tables']['sales_reps']['Row']
 type SalesOrder = Database['public']['Tables']['sales_orders']['Row']
 
@@ -304,10 +302,10 @@ export default function EditInvoiceQuickBooksStyle({
       // Find the inventory item to get its weighted average cost
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       // Use inventory cost if available, otherwise product cost, otherwise 0
-      const costEach = inventoryItem?.weighted_average_cost || 
-                       inventoryItem?.last_cost || 
-                       inventoryItem?.purchase_price || 
-                       products.find(p => p.id === item.product_id)?.cost || 0
+      const costEach = (inventoryItem as any)?.weighted_average_cost ||
+                       (inventoryItem as any)?.last_cost ||
+                       (inventoryItem as any)?.purchase_price ||
+                       (products.find(p => p.id === item.product_id) as any)?.cost || 0
       return sum + (costEach * Number(item.qty || 0))
     }, 0)
     
@@ -696,8 +694,8 @@ export default function EditInvoiceQuickBooksStyle({
     setCustomerDropdown(true)
     
     // Check if this could be a new customer
-    const existing = customers.find(c => 
-      c.company_name.toLowerCase() === value.toLowerCase()
+    const existing = customers.find(c =>
+      ((c as any).company_name || c.name).toLowerCase() === value.toLowerCase()
     )
     
     if (!existing && value.trim()) {
@@ -706,7 +704,7 @@ export default function EditInvoiceQuickBooksStyle({
   }
 
   const selectCustomer = (customerData: Customer) => {
-    setCustomer(customerData.company_name)
+    setCustomer((customerData as any).company_name || customerData.name)
     setCustomerId(customerData.id)
     setCustomerDropdown(false)
     
@@ -716,9 +714,9 @@ export default function EditInvoiceQuickBooksStyle({
     }
     
     // Set Bill To with customer info
-    let billToText = customerData.company_name
-    if (customerData.address_line_1) {
-      billToText += '\n' + customerData.address_line_1
+    let billToText = (customerData as any).company_name || customerData.name
+    if ((customerData as any).address_line_1) {
+      billToText += '\n' + (customerData as any).address_line_1
     }
     if (customerData.address_line_2) {
       billToText += '\n' + customerData.address_line_2

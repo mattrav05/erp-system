@@ -25,11 +25,9 @@ import AuditInfo from '@/components/ui/audit-info'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type Product = Database['public']['Tables']['products']['Row']
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
-  vendors?: { company_name: string; contact_name: string | null }
-}
-type POTemplate = Database['public']['Tables']['po_templates']['Row']
-type PurchaseOrderLine = Database['public']['Tables']['purchase_order_lines']['Row']
+type PurchaseOrder = any
+type POTemplate = any
+type PurchaseOrderLine = any
 
 interface InventoryItem {
   id: string
@@ -598,13 +596,13 @@ export default function EditPurchaseOrderQuickBooksStyle({
   // Handle product selection
   const handleProductSelect = (lineId: string, inventoryItem: InventoryItem) => {
     const product = inventoryItem.products
-    const purchasePrice = inventoryItem.last_cost || inventoryItem.purchase_price || product.default_purchase_price || 0
+    const purchasePrice = (inventoryItem as any).last_cost || (inventoryItem as any).purchase_price || (product as any).default_purchase_price || 0
     console.log('Product selected:', { 
       sku: product.sku, 
       purchasePrice, 
       lastCost: inventoryItem.last_cost,
       inventoryPrice: inventoryItem.purchase_price,
-      defaultPrice: product.default_purchase_price 
+      defaultPrice: (product as any).default_purchase_price 
     })
     
     setLineItems(prev => prev.map(item => {
@@ -632,7 +630,7 @@ export default function EditPurchaseOrderQuickBooksStyle({
 
   // Handle vendor selection
   const handleVendorSelect = (selectedVendor: Vendor) => {
-    setVendor(selectedVendor.company_name)
+    setVendor((selectedVendor as any).company_name || selectedVendor.name)
     setVendorId(selectedVendor.id)
     setVendorDropdown(false)
     setVendorSearch('')
@@ -713,8 +711,8 @@ export default function EditPurchaseOrderQuickBooksStyle({
   const getFilteredVendors = () => {
     if (!vendorSearch) return vendors
     return vendors.filter(v => 
-      v.company_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-      (v.contact_name && v.contact_name.toLowerCase().includes(vendorSearch.toLowerCase()))
+      ((v as any).company_name || v.name).toLowerCase().includes(vendorSearch.toLowerCase()) ||
+      ((v as any).contact_name && (v as any).contact_name.toLowerCase().includes(vendorSearch.toLowerCase()))
     )
   }
 
@@ -1028,7 +1026,7 @@ export default function EditPurchaseOrderQuickBooksStyle({
           <div class="address-box">
             <div class="address-label">Vendor</div>
             <div><strong>${vendor}</strong></div>
-            ${vendors.find(v => v.id === vendorId)?.contact_name ? `<div>Contact: ${vendors.find(v => v.id === vendorId)?.contact_name}</div>` : ''}
+            ${(vendors.find(v => v.id === vendorId) as any)?.contact_name ? `<div>Contact: ${(vendors.find(v => v.id === vendorId) as any)?.contact_name}</div>` : ''}
           </div>
           
           <div class="address-box">

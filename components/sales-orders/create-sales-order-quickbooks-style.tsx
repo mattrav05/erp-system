@@ -18,7 +18,7 @@ type Customer = Database['public']['Tables']['customers']['Row']
 type SalesRep = Database['public']['Tables']['sales_reps']['Row']
 type Product = Database['public']['Tables']['products']['Row']
 type SalesOrder = Database['public']['Tables']['sales_orders']['Row']
-type SOTemplate = Database['public']['Tables']['so_templates']['Row']
+type SOTemplate = any
 
 interface LineItem {
   id: string
@@ -30,6 +30,9 @@ interface LineItem {
   product_id?: string
   unit_of_measure: string
   is_taxable?: boolean  // Simple taxable flag instead of complex tax codes
+  tax_code?: string
+  tax_rate?: number
+  tax_amount?: number
 }
 
 interface NewCustomerModal {
@@ -1042,7 +1045,7 @@ export default function CreateSalesOrderQuickBooksStyle({
                   <td className="px-2 py-2" style={{width: `${columnWidths.tax}px`}}>
                     <TaxCodeDropdown
                       value={item.tax_code}
-                      onChange={(taxCode) => {
+                      onChange={(taxCode: any) => {
                         updateLineItem(item.id, 'tax_code', taxCode?.code || '')
                         updateLineItem(item.id, 'tax_rate', taxCode?.tax_rate || 0)
                         const taxAmount = (item.rate * item.qty) * ((taxCode?.tax_rate || 0) / 100)

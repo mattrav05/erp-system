@@ -182,14 +182,14 @@ export default function VendorsList() {
       // Extract actual error values using direct property access
       if (error && typeof error === 'object') {
         console.error('Detailed Supabase Error:')
-        console.error('  - Message:', error.message)
-        console.error('  - Code:', error.code)
-        console.error('  - Details:', error.details)
-        console.error('  - Hint:', error.hint)
+        console.error('  - Message:', (error as any).message)
+        console.error('  - Code:', (error as any).code)
+        console.error('  - Details:', (error as any).details)
+        console.error('  - Hint:', (error as any).hint)
         
         // Log all available properties
         for (const key of Object.keys(error)) {
-          console.error(`  - ${key}:`, error[key])
+          console.error(`  - ${key}:`, (error as any)[key])
         }
       }
       
@@ -225,11 +225,11 @@ export default function VendorsList() {
     } catch (error) {
       console.error('Error updating vendor:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        stack: error?.stack
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        stack: (error as any)?.stack
       })
       
       // Fallback to local state update if database fails
@@ -259,11 +259,11 @@ export default function VendorsList() {
     } catch (error) {
       console.error('Error deleting vendor:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        stack: error?.stack
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        stack: (error as any)?.stack
       })
       
       // Fallback to local state deletion if database fails

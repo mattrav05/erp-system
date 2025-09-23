@@ -58,7 +58,7 @@ export class InventoryImportModule implements ImportModule {
 
   async validateData(data: any[], fieldMappings: FieldMapping[]): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];
-    const fieldMap = new Map(fieldMappings.map(fm => [fm.sourceField, fm.targetField]));
+    const fieldMap = new Map(fieldMappings.map(fm => [fm.csvColumn, fm.dbField]));
 
     // Get all product SKUs for validation
     const { data: products } = await supabase
@@ -216,7 +216,7 @@ export class InventoryImportModule implements ImportModule {
       results: []
     };
 
-    const fieldMap = new Map(fieldMappings.map(fm => [fm.sourceField, fm.targetField]));
+    const fieldMap = new Map(fieldMappings.map(fm => [fm.csvColumn, fm.dbField]));
 
     // Helper function to get mapped value
     const getValue = (row: any, targetField: string) => {
@@ -309,7 +309,7 @@ export class InventoryImportModule implements ImportModule {
           .single();
 
         let result;
-        if (existing && jobData.duplicateStrategy === 'update') {
+        if (existing && (jobData as any).duplicateStrategy === 'update') {
           // Update existing inventory
           const { data: updated, error } = await supabase
             .from('inventory')

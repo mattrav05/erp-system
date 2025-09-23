@@ -127,7 +127,7 @@ export default function PurchaseOrdersList({
           matchesAmount(po.tax_amount, searchTerm)
         
         // Search in line items
-        const lineItemMatch = po.purchase_order_lines?.some(line => 
+        const lineItemMatch = po.purchase_order_lines?.some((line: any) =>
           line.item_code?.toLowerCase().includes(lowerSearchTerm) ||
           line.description?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.name?.toLowerCase().includes(lowerSearchTerm) ||
@@ -256,7 +256,7 @@ export default function PurchaseOrdersList({
 
       if (error) throw error
 
-      setPurchaseOrders(prev => [newPurchaseOrder, ...prev])
+      setPurchaseOrders((prev: any) => [newPurchaseOrder, ...prev])
       
       // Also copy line items if they exist
       const { data: lines } = await supabase
@@ -348,7 +348,7 @@ export default function PurchaseOrdersList({
       if (verifyError && verifyError.code === 'PGRST116') {
         // Record not found - deletion was successful
         console.log('Deletion verified - record no longer exists in database')
-        setPurchaseOrders(prev => prev.filter(po => po.id !== purchaseOrder.id))
+        setPurchaseOrders((prev: any) => prev.filter((po: any) => po.id !== purchaseOrder.id))
         console.log('Purchase order deleted successfully from database and local state')
       } else if (verifyData) {
         // Record still exists - deletion failed

@@ -21,10 +21,8 @@ type Customer = Database['public']['Tables']['customers']['Row'] & {
   payment_terms?: { name: string } | null
 }
 type Product = Database['public']['Tables']['products']['Row']
-type Invoice = Database['public']['Tables']['invoices']['Row'] & {
-  customers?: { company_name: string; contact_name: string | null }
-}
-type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
+type Invoice = any
+type InvoiceTemplate = any
 type SalesRep = Database['public']['Tables']['sales_reps']['Row']
 type SalesOrder = Database['public']['Tables']['sales_orders']['Row']
 
@@ -343,10 +341,10 @@ export default function CreateInvoiceQuickBooksStyle({
       // Find the inventory item to get its cost (preferred)
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       // Use inventory cost if available, otherwise product cost, otherwise 0
-      const costEach = inventoryItem?.weighted_average_cost || 
-                       inventoryItem?.last_cost || 
-                       inventoryItem?.purchase_price || 
-                       products.find(p => p.id === item.product_id)?.cost || 0
+      const costEach = (inventoryItem as any)?.weighted_average_cost ||
+                       (inventoryItem as any)?.last_cost ||
+                       (inventoryItem as any)?.purchase_price ||
+                       (products.find(p => p.id === item.product_id) as any)?.cost || 0
       return sum + (costEach * item.qty)
     }, 0)
     
@@ -450,8 +448,8 @@ export default function CreateInvoiceQuickBooksStyle({
       console.error('=== DOCUMENT RELATIONSHIPS ERROR ===')
       console.error('Error object:', error)
       console.error('Error type:', typeof error)
-      console.error('Error message:', error?.message)
-      console.error('Error code:', error?.code)
+      console.error('Error message:', (error as any)?.message)
+      console.error('Error code:', (error as any)?.code)
       console.error('Stringified error:', JSON.stringify(error, null, 2))
     }
   }
@@ -793,8 +791,8 @@ export default function CreateInvoiceQuickBooksStyle({
     setCustomerDropdown(true)
     
     // Check if this could be a new customer
-    const existing = customers.find(c => 
-      c.company_name.toLowerCase() === value.toLowerCase()
+    const existing = customers.find(c =>
+      (c as any).company_name.toLowerCase() === value.toLowerCase()
     )
     
     if (!existing && value.trim()) {
@@ -803,25 +801,25 @@ export default function CreateInvoiceQuickBooksStyle({
   }
 
   const selectCustomer = (customerData: Customer) => {
-    setCustomer(customerData.company_name)
+    setCustomer((customerData as any).company_name)
     setCustomerId(customerData.id)
     setCustomerDropdown(false)
     
     // Auto-fill payment terms from customer if available
-    if (customerData.payment_terms?.name) {
-      setTerms(customerData.payment_terms.name)
+    if ((customerData as any).payment_terms?.name) {
+      setTerms((customerData as any).payment_terms.name)
     }
     
     // Set Bill To with customer info
-    let billToText = customerData.company_name
-    if (customerData.address_line_1) {
-      billToText += '\n' + customerData.address_line_1
+    let billToText = (customerData as any).company_name
+    if ((customerData as any).address_line_1) {
+      billToText += '\n' + (customerData as any).address_line_1
     }
-    if (customerData.address_line_2) {
-      billToText += '\n' + customerData.address_line_2
+    if ((customerData as any).address_line_2) {
+      billToText += '\n' + (customerData as any).address_line_2
     }
-    if (customerData.city || customerData.state || customerData.zip_code) {
-      billToText += '\n' + [customerData.city, customerData.state, customerData.zip_code].filter(Boolean).join(', ')
+    if ((customerData as any).city || (customerData as any).state || (customerData as any).zip_code) {
+      billToText += '\n' + [(customerData as any).city, (customerData as any).state, (customerData as any).zip_code].filter(Boolean).join(', ')
     }
     if (customerData.phone) {
       billToText += '\nPhone: ' + customerData.phone

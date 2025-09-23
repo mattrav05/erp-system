@@ -48,8 +48,8 @@ type SalesOrder = Database['public']['Tables']['sales_orders']['Row'] & {
   customers?: { name: string; email: string | null }
   sales_reps?: { first_name: string; last_name: string; employee_code: string }
 }
-type SOTemplate = Database['public']['Tables']['so_templates']['Row']
-type SalesOrderLine = Database['public']['Tables']['sales_order_lines']['Row']
+type SOTemplate = any
+type SalesOrderLine = any
 
 interface LineItem {
   id: string
@@ -218,11 +218,11 @@ export default function EditSalesOrderQuickBooksStyle({
       }
 
       // Check for related estimate using estimate_id field (fallback to estimate_number)
-      if (salesOrder.estimate_id) {
+      if ((salesOrder as any).estimate_id) {
         const { data: estimate, error: estError } = await supabase
           .from('estimates')
           .select('*')
-          .eq('id', salesOrder.estimate_id)
+          .eq('id', (salesOrder as any).estimate_id)
           .single()
 
         if (!estError && estimate) {

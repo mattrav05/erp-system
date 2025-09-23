@@ -274,7 +274,7 @@ export default function SalesOrdersList({
 
       if (error) throw error
 
-      setSalesOrders(prev => [newSalesOrder, ...prev])
+      setSalesOrders((prev: any) => [newSalesOrder, ...prev])
       
       // Also copy line items if they exist
       const { data: lines } = await supabase
@@ -377,7 +377,7 @@ export default function SalesOrdersList({
       if (verifyError && verifyError.code === 'PGRST116') {
         // Record not found - deletion was successful
         console.log('Deletion verified - record no longer exists in database')
-        setSalesOrders(prev => prev.filter(so => so.id !== salesOrder.id))
+        setSalesOrders((prev: any) => prev.filter((so: any) => so.id !== salesOrder.id))
         console.log('Sales order deleted successfully from database and local state')
       } else if (verifyData) {
         // Record still exists - deletion failed

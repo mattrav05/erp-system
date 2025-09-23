@@ -720,9 +720,12 @@ export default function InventoryList() {
           weighted_average_cost: 12.50,
           last_cost: 12.50,
           sales_price: 18.75,
+          margin_percent: 33.3,
+          markup_percent: 50.0,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         },
         {
           id: '2',
@@ -743,9 +746,12 @@ export default function InventoryList() {
           weighted_average_cost: 18.75,
           last_cost: 18.75,
           sales_price: 28.15,
+          margin_percent: 33.4,
+          markup_percent: 50.1,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         },
         {
           id: '3',
@@ -766,9 +772,12 @@ export default function InventoryList() {
           weighted_average_cost: 5.25,
           last_cost: 5.25,
           sales_price: 7.99,
+          margin_percent: 34.3,
+          markup_percent: 52.2,
           location: 'MAIN',
           default_tax_code: 'NON',
-          default_tax_rate: 0
+          default_tax_rate: 0,
+          is_active: true
         },
         {
           id: '4',
@@ -789,9 +798,12 @@ export default function InventoryList() {
           weighted_average_cost: 0,
           last_cost: 0,
           sales_price: 75.00,
+          margin_percent: 100.0,
+          markup_percent: 0,
           location: 'MAIN',
           default_tax_code: 'EXE',
-          default_tax_rate: 0
+          default_tax_rate: 0,
+          is_active: true
         },
         {
           id: '5',
@@ -812,9 +824,12 @@ export default function InventoryList() {
           weighted_average_cost: 45.00,
           last_cost: 45.00,
           sales_price: 67.50,
+          margin_percent: 33.3,
+          markup_percent: 50.0,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         }
       ]
       

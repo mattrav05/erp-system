@@ -415,7 +415,7 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
     )
     
     // Search in line item SKUs and product names
-    const lineItemMatch = po.purchase_order_lines?.some(line => 
+    const lineItemMatch = po.purchase_order_lines?.some((line: any) =>
       line.products?.sku?.toLowerCase().includes(query) ||
       line.products?.name?.toLowerCase().includes(query)
     )
@@ -530,11 +530,11 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
                       
                       // Check if this PO was matched by SKU/product search
                       const query = searchQuery.toLowerCase()
-                      const matchedBySKU = searchQuery && po.purchase_order_lines?.some(line => 
+                      const matchedBySKU = searchQuery && po.purchase_order_lines?.some((line: any) =>
                         line.products?.sku?.toLowerCase().includes(query) ||
                         line.products?.name?.toLowerCase().includes(query)
                       )
-                      const matchedProducts = searchQuery ? po.purchase_order_lines?.filter(line => 
+                      const matchedProducts = searchQuery ? po.purchase_order_lines?.filter((line: any) =>
                         line.products?.sku?.toLowerCase().includes(query) ||
                         line.products?.name?.toLowerCase().includes(query)
                       ) : []
@@ -608,7 +608,7 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
                                   Contains searched items:
                                 </div>
                                 <div className="space-y-1">
-                                  {matchedProducts.slice(0, 3).map((line, idx) => (
+                                  {matchedProducts.slice(0, 3).map((line: any, idx: number) => (
                                     <div key={idx} className="text-green-700">
                                       <span className="font-medium">{line.products?.sku}</span>
                                       {line.products?.name && (

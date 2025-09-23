@@ -22,8 +22,8 @@ import DocumentFlowTracker, { DocumentRelationship } from '@/components/ui/docum
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type Product = Database['public']['Tables']['products']['Row']
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row']
-type POTemplate = Database['public']['Tables']['po_templates']['Row']
+type PurchaseOrder = any
+type POTemplate = any
 
 interface InventoryItem {
   id: string
@@ -577,13 +577,13 @@ export default function CreatePurchaseOrderQuickBooksStyle({
   // Handle product selection
   const handleProductSelect = (lineId: string, inventoryItem: InventoryItem) => {
     const product = inventoryItem.products
-    const purchasePrice = inventoryItem.weighted_average_cost || inventoryItem.last_cost || product.default_purchase_price || 0
+    const purchasePrice = (inventoryItem as any).weighted_average_cost || (inventoryItem as any).last_cost || (product as any).default_purchase_price || 0
     console.log('Product selected:', { 
       sku: product.sku, 
       purchasePrice, 
       lastCost: inventoryItem.last_cost,
       inventoryPrice: inventoryItem.weighted_average_cost,
-      defaultPrice: product.default_purchase_price 
+      defaultPrice: (product as any).default_purchase_price 
     })
     
     setLineItems(prev => prev.map(item => {
@@ -599,7 +599,7 @@ export default function CreatePurchaseOrderQuickBooksStyle({
           qty: defaultQty,
           rate: purchasePrice,
           amount: lineAmount,
-          is_taxable: inventoryItem.default_tax_code === 'TAX'
+          is_taxable: (inventoryItem as any).default_tax_code === 'TAX'
         }
         console.log('Updated line item:', updatedItem)
         return updatedItem
@@ -611,7 +611,7 @@ export default function CreatePurchaseOrderQuickBooksStyle({
 
   // Handle vendor selection
   const handleVendorSelect = (selectedVendor: Vendor) => {
-    setVendor(selectedVendor.company_name)
+    setVendor((selectedVendor as any).company_name || selectedVendor.name)
     setVendorId(selectedVendor.id)
     setVendorDropdown(false)
     setVendorSearch('')
@@ -689,8 +689,8 @@ export default function CreatePurchaseOrderQuickBooksStyle({
   const getFilteredVendors = () => {
     if (!vendorSearch) return vendors
     return vendors.filter(v => 
-      v.company_name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-      (v.contact_name && v.contact_name.toLowerCase().includes(vendorSearch.toLowerCase()))
+      ((v as any).company_name || v.name).toLowerCase().includes(vendorSearch.toLowerCase()) ||
+      ((v as any).contact_name && (v as any).contact_name.toLowerCase().includes(vendorSearch.toLowerCase()))
     )
   }
 
@@ -895,7 +895,7 @@ export default function CreatePurchaseOrderQuickBooksStyle({
           <div class="address-box">
             <div class="address-label">Vendor</div>
             <div><strong>${vendor}</strong></div>
-            ${vendors.find(v => v.id === vendorId)?.contact_name ? `<div>Contact: ${vendors.find(v => v.id === vendorId)?.contact_name}</div>` : ''}
+            ${(vendors.find(v => v.id === vendorId) as any)?.contact_name ? `<div>Contact: ${(vendors.find(v => v.id === vendorId) as any)?.contact_name}</div>` : ''}
           </div>
           
           <div class="address-box">
