@@ -120,7 +120,7 @@ export default function ItemPurchaseOrders({ item, dateRange, onClose }: ItemPur
 
           // Determine line status based on received vs ordered
           let lineStatus: 'PENDING' | 'PARTIAL' | 'RECEIVED' | 'CANCELLED'
-          if (po.status === 'CANCELLED') {
+          if ((po as any).status === 'CANCELLED') {
             lineStatus = 'CANCELLED'
           } else if (qtyReceived === 0) {
             lineStatus = 'PENDING'
@@ -131,16 +131,16 @@ export default function ItemPurchaseOrders({ item, dateRange, onClose }: ItemPur
           }
 
           return {
-            id: po.id,
-            po_number: po.po_number || '',
-            supplier_name: po.vendors?.company_name || 'Unknown Supplier',
-            order_date: po.order_date || '',
-            expected_date: po.expected_delivery_date || undefined,
-            status: po.status as any,
-            total_amount: po.total_amount || 0,
+            id: (po as any).id,
+            po_number: (po as any).po_number || '',
+            supplier_name: (po as any).vendors?.company_name || 'Unknown Supplier',
+            order_date: (po as any).order_date || '',
+            expected_date: (po as any).expected_delivery_date || undefined,
+            status: (po as any).status as any,
+            total_amount: (po as any).total_amount || 0,
             items: [{
               id: line.id,
-              purchase_order_id: po.id,
+              purchase_order_id: (po as any).id,
               quantity: qtyOrdered,
               unit_cost: unitCost,
               total_cost: totalCost,

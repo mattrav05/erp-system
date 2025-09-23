@@ -84,7 +84,7 @@ export default function ItemTransactionHistory({ item, dateRange, onClose }: Ite
           transaction_type: 'PURCHASE',
           quantity_change: receipt.qty_received || 0,
           unit_cost: receipt.unit_cost || 0,
-          reference_number: receipt.purchase_order_lines?.purchase_orders?.po_number || receipt.reference_number || null,
+          reference_number: (receipt.purchase_order_lines as any)?.purchase_orders?.po_number || receipt.reference_number || null,
           notes: receipt.notes,
           created_at: receipt.receive_date || receipt.created_at,
           created_by: receipt.received_by,
@@ -119,10 +119,10 @@ export default function ItemTransactionHistory({ item, dateRange, onClose }: Ite
           transaction_type: 'ADJUSTMENT',
           quantity_change: adj.adjustment_quantity || 0,
           unit_cost: null,
-          reference_number: adj.inventory_adjustments?.adjustment_number || null,
-          notes: adj.line_notes || adj.inventory_adjustments?.notes,
-          created_at: adj.inventory_adjustments?.adjustment_date || new Date().toISOString(),
-          created_by: adj.inventory_adjustments?.user_id,
+          reference_number: (adj.inventory_adjustments as any)?.adjustment_number || null,
+          notes: adj.line_notes || (adj.inventory_adjustments as any)?.notes,
+          created_at: (adj.inventory_adjustments as any)?.adjustment_date || new Date().toISOString(),
+          created_by: (adj.inventory_adjustments as any)?.user_id,
           balance_after: adj.new_quantity || 0
         }))
         allTransactions.push(...adjustmentTransactions)
@@ -156,7 +156,7 @@ export default function ItemTransactionHistory({ item, dateRange, onClose }: Ite
           if (!sale.sales_orders) return false
 
           // Only include shipped/delivered orders
-          if (!['SHIPPED', 'DELIVERED'].includes(sale.sales_orders.status)) return false
+          if (!['SHIPPED', 'DELIVERED'].includes((sale.sales_orders as any).status)) return false
 
           // Check if this line has been invoiced
           const qtyInvoiced = sale.qty_invoiced || 0
@@ -178,9 +178,9 @@ export default function ItemTransactionHistory({ item, dateRange, onClose }: Ite
             transaction_type: 'SALE',
             quantity_change: -uninvoicedQty, // Only the uninvoiced portion
             unit_cost: sale.unit_price || 0,
-            reference_number: sale.sales_orders?.so_number || null,
-            notes: `Sales Order (Shipped, not invoiced) - ${sale.sales_orders?.status}`,
-            created_at: sale.sales_orders?.ship_date || sale.sales_orders?.order_date || new Date().toISOString(),
+            reference_number: (sale.sales_orders as any)?.so_number || null,
+            notes: `Sales Order (Shipped, not invoiced) - ${(sale.sales_orders as any)?.status}`,
+            created_at: (sale.sales_orders as any)?.ship_date || (sale.sales_orders as any)?.order_date || new Date().toISOString(),
             created_by: null,
             balance_after: 0
           }
@@ -215,18 +215,18 @@ export default function ItemTransactionHistory({ item, dateRange, onClose }: Ite
         // Include all invoices (they represent actual shipments/deductions)
         // Don't filter by status - even draft invoices may represent committed shipments
         const invoiceTransactions: Transaction[] = invoiceLines.map(inv => {
-          const statusLabel = inv.invoices?.status === 'PAID' ? 'Paid' :
-                            inv.invoices?.status === 'SENT' ? 'Sent' :
-                            inv.invoices?.status === 'DRAFT' ? 'Draft' : inv.invoices?.status || 'Unknown'
+          const statusLabel = (inv.invoices as any)?.status === 'PAID' ? 'Paid' :
+                            (inv.invoices as any)?.status === 'SENT' ? 'Sent' :
+                            (inv.invoices as any)?.status === 'DRAFT' ? 'Draft' : (inv.invoices as any)?.status || 'Unknown'
 
           return {
             id: `invoice-${inv.id}`,
             transaction_type: 'SALE',
             quantity_change: -(inv.quantity || 0), // Invoices represent actual deductions
             unit_cost: inv.unit_price || 0,
-            reference_number: inv.invoices?.invoice_number || null,
+            reference_number: (inv.invoices as any)?.invoice_number || null,
             notes: `Invoice (${statusLabel})`,
-            created_at: inv.invoices?.invoice_date || new Date().toISOString(),
+            created_at: (inv.invoices as any)?.invoice_date || new Date().toISOString(),
             created_by: null,
             balance_after: 0
           }

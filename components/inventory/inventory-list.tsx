@@ -605,8 +605,8 @@ export default function InventoryList() {
 
       // Filter for active PO statuses after fetching
       const activePOLines = (poLines || []).filter(line => 
-        line.purchase_orders && 
-        ['PENDING', 'CONFIRMED', 'PARTIAL'].includes(line.purchase_orders.status)
+        line.purchase_orders &&
+        ['PENDING', 'CONFIRMED', 'PARTIAL'].includes((line.purchase_orders as any).status)
       )
 
       // If no active PO lines, return early
@@ -654,9 +654,9 @@ export default function InventoryList() {
         }
         
         acc[line.product_id].push({
-          po_number: line.purchase_orders?.po_number || 'Unknown',
-          status: line.purchase_orders?.status || 'Unknown',
-          order_date: line.purchase_orders?.order_date || '',
+          po_number: (line.purchase_orders as any)?.po_number || 'Unknown',
+          status: (line.purchase_orders as any)?.status || 'Unknown',
+          order_date: (line.purchase_orders as any)?.order_date || '',
           qty_ordered: qtyOrdered,
           qty_received: qtyReceived,
           qty_pending: qtyPending

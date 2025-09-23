@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { X, Package, CheckCircle, AlertTriangle, Truck, Calendar, Hash, Search, Building2, DollarSign, Clock } from 'lucide-react'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string }
   purchase_order_lines?: PurchaseOrderLine[]
 }
