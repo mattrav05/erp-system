@@ -1138,8 +1138,8 @@ export default function InventoryList() {
       
       if (typeof idOrItem === 'string') {
         // Fallback to local state deletion for string ID calls
-        setInventory(prev => prev.filter(item => item.id !== id))
-        console.log('Deleted item from local state (database unavailable):', id)
+        setInventory(prev => prev.filter(item => item.id !== idOrItem))
+        console.log('Deleted item from local state (database unavailable):', idOrItem)
       } else {
         alert('Failed to delete item')
       }

@@ -716,7 +716,7 @@ export default function CreateInvoiceQuickBooksStyle({
       const day = today.getDate().toString().padStart(2, '0')
       
       // For partial invoices from sales orders, use SO reference + sequence
-      if (sourceSalesOrderId && isPartialInvoice) {
+      if (sourceSalesOrderId) {
         // Get next sequence number for this sales order
         const { data: existingInvoices, error: seqError } = await supabase
           .from('invoices')
@@ -1353,7 +1353,7 @@ export default function CreateInvoiceQuickBooksStyle({
             <h1>INVOICE</h1>
           </div>
           
-          ${sourceSalesOrderId && isPartialInvoice ? `
+          ${sourceSalesOrderId ? `
           <div class="partial-invoice-banner">
             <strong>⚠️ PARTIAL INVOICE</strong> - This is a partial invoice from Sales Order
           </div>
@@ -1375,8 +1375,8 @@ export default function CreateInvoiceQuickBooksStyle({
             <div>
               <strong>Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}<br>
               <strong>Terms:</strong> ${terms}<br>
-              ${amountPaid > 0 ? `<strong>Amount Paid:</strong> $${amountPaid.toFixed(2)}<br>` : ''}
-              ${total - amountPaid > 0 ? `<strong>Balance Due:</strong> $${(total - amountPaid).toFixed(2)}` : ''}
+              ${false ? `<strong>Amount Paid:</strong> $0.00<br>` : ''}
+              ${total > 0 ? `<strong>Balance Due:</strong> $${total.toFixed(2)}` : ''}
             </div>
           </div>
           
@@ -1420,14 +1420,14 @@ export default function CreateInvoiceQuickBooksStyle({
                 <td><strong>Total:</strong></td>
                 <td style="text-align: right;"><strong>$${total.toFixed(2)}</strong></td>
               </tr>
-              ${amountPaid > 0 ? `
+              ${0 > 0 ? `
               <tr>
                 <td>Amount Paid:</td>
-                <td style="text-align: right;">($${amountPaid.toFixed(2)})</td>
+                <td style="text-align: right;">($0.00)</td>
               </tr>
               <tr class="total-row">
                 <td><strong>Balance Due:</strong></td>
-                <td style="text-align: right;"><strong>$${(total - amountPaid).toFixed(2)}</strong></td>
+                <td style="text-align: right;"><strong>$${(total - 0).toFixed(2)}</strong></td>
               </tr>
               ` : ''}
             </table>
@@ -1493,7 +1493,7 @@ Invoice Summary:
           currency: 'USD'
         }).format(total)}
 - Terms: ${terms}
-${amountPaid > 0 ? `- Balance Due: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(total - amountPaid)}` : ''}
+${0 > 0 ? `- Balance Due: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(total - 0)}` : ''}
 
 ${customerMessage || 'Thank you for your business!'}
 
@@ -2225,7 +2225,7 @@ ${companySettings?.company_name || 'Your Company'}`
                       <h1>INVOICE</h1>
                     </div>
                     
-                    ${sourceSalesOrderId && isPartialInvoice ? `
+                    ${sourceSalesOrderId ? `
                     <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
                       <strong>⚠️ PARTIAL INVOICE</strong> - This is a partial invoice from Sales Order
                     </div>
@@ -2247,8 +2247,8 @@ ${companySettings?.company_name || 'Your Company'}`
                       <div>
                         <strong>Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}<br>
                         <strong>Terms:</strong> ${terms}<br>
-                        ${amountPaid > 0 ? `<strong>Amount Paid:</strong> $${amountPaid.toFixed(2)}<br>` : ''}
-                        ${total - amountPaid > 0 ? `<strong>Balance Due:</strong> $${(total - amountPaid).toFixed(2)}` : ''}
+                        ${false ? `<strong>Amount Paid:</strong> $0.00<br>` : ''}
+                        ${total - 0 > 0 ? `<strong>Balance Due:</strong> $${(total - 0).toFixed(2)}` : ''}
                       </div>
                     </div>
                     
@@ -2300,14 +2300,14 @@ ${companySettings?.company_name || 'Your Company'}`
                           <td><strong>Total:</strong></td>
                           <td style="text-align: right;"><strong>$${total.toFixed(2)}</strong></td>
                         </tr>
-                        ${amountPaid > 0 ? `
+                        ${0 > 0 ? `
                         <tr>
                           <td>Amount Paid:</td>
-                          <td style="text-align: right;">($${amountPaid.toFixed(2)})</td>
+                          <td style="text-align: right;">($0.00)</td>
                         </tr>
                         <tr style="font-weight: bold; background-color: #f9f9f9;">
                           <td><strong>Balance Due:</strong></td>
-                          <td style="text-align: right;"><strong>$${(total - amountPaid).toFixed(2)}</strong></td>
+                          <td style="text-align: right;"><strong>$${(total - 0).toFixed(2)}</strong></td>
                         </tr>
                         ` : ''}
                       </table>

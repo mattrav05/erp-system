@@ -1102,7 +1102,7 @@ Best regards,
         terms_and_conditions: terms?.trim() || null,
         internal_notes: memo?.trim() || null,
         customer_notes: customerMessage?.trim() || null,
-        discount_percentage: estimate.discount_percentage || 0,
+        discount_percentage: (estimate as any).discount_percentage || 0,
         subtotal: subtotal || 0,
         tax_rate: defaultTaxRate,
         tax_amount: taxAmount || 0,
@@ -1167,12 +1167,12 @@ Best regards,
     } catch (error) {
       console.error('Error duplicating estimate:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint
       })
-      alert(`Failed to duplicate estimate: ${error?.message || 'Unknown error'}`)
+      alert(`Failed to duplicate estimate: ${(error as any)?.message || 'Unknown error'}`)
     }
   }
 
@@ -1547,12 +1547,12 @@ Best regards,
     } catch (error) {
       console.error('Error updating estimate:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint
       })
-      alert(`Failed to update estimate: ${error?.message || 'Unknown error'}`)
+      alert(`Failed to update estimate: ${(error as any)?.message || 'Unknown error'}`)
       return false // Return failure
     } finally {
       setIsSaving(false)
@@ -2162,9 +2162,9 @@ Phone: (555) 123-4567"
           {/* Audit Trail Section */}
           <div className="pt-4 border-t">
             <AuditInfo
-              lastEditedBy={estimate.last_edited_by}
-              lastEditedAt={estimate.last_edited_at}
-              createdBy={estimate.created_by}
+              lastEditedBy={(estimate as any).last_edited_by}
+              lastEditedAt={(estimate as any).last_edited_at}
+              createdBy={(estimate as any).created_by}
               createdAt={estimate.created_at}
               showCreated={true}
               className="flex flex-col gap-1"
