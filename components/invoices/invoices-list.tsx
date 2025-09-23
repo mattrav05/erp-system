@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Filter, RefreshCw, Eye, Copy, Trash2, Mail, FileText, DollarSign } from 'lucide-react'
 import ContextMenu from '@/components/ui/context-menu'
 
-type Invoice = Database['public']['Tables']['invoices']['Row'] & {
+type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
   sales_orders?: { 
     so_number: string
@@ -329,6 +329,7 @@ export default function InvoicesList({
                   onClick: () => handleEmail(invoice)
                 },
                 {
+                  id: 'separator',
                   label: '',
                   onClick: () => {},
                   separator: true

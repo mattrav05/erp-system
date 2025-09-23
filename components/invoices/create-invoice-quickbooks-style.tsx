@@ -926,7 +926,7 @@ export default function CreateInvoiceQuickBooksStyle({
       console.error('=== CUSTOMER CREATE ERROR ===')
       console.error('Error:', error)
       
-      let errorMessage = error?.message || 'Unknown error occurred'
+      let errorMessage = (error as any)?.message || 'Unknown error occurred'
       
       // Provide more specific error messages
       if (errorMessage.includes('violates check constraint')) {
@@ -992,7 +992,7 @@ export default function CreateInvoiceQuickBooksStyle({
     updateLineItem(lineId, 'product_id', product.id)
     
     // Use sales price from inventory, fallback to last_cost if no sales price
-    const salePrice = inventoryItem?.sales_price || inventoryItem?.last_cost || 0
+    const salePrice = (inventoryItem as any)?.sales_price || (inventoryItem as any)?.last_cost || 0
     updateLineItem(lineId, 'rate', salePrice)
     
     // Get current quantity for amount calculation
@@ -1368,7 +1368,7 @@ export default function CreateInvoiceQuickBooksStyle({
               <strong>Date:</strong> ${date}<br>
               <strong>Due Date:</strong> ${dueDate}<br>
               ${sourceSalesOrderId && documentRelationships.salesOrder ? `<strong>Sales Order #:</strong> ${documentRelationships.salesOrder.number}<br>` : ''}
-              ${salesReps.find(rep => rep.id === salesRepId)?.name ? `<strong>Sales Rep:</strong> ${salesReps.find(rep => rep.id === salesRepId)?.name}<br>` : ''}
+              ${(salesReps.find(rep => rep.id === salesRepId) as any)?.name ? `<strong>Sales Rep:</strong> ${(salesReps.find(rep => rep.id === salesRepId) as any)?.name}<br>` : ''}
             </div>
             <div>
               <strong>Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}<br>
@@ -1549,7 +1549,7 @@ ${companySettings?.company_name || 'Your Company'}`
   }
 
   const filteredCustomers = customers.filter(c =>
-    c.company_name.toLowerCase().includes(customer.toLowerCase())
+    ((c as any).company_name || c.name).toLowerCase().includes(customer.toLowerCase())
   ).slice(0, 8)
 
   const handleItemSearch = (lineId: string, value: string) => {
@@ -1748,7 +1748,7 @@ ${companySettings?.company_name || 'Your Company'}`
                               className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => selectCustomer(c)}
                             >
-                              <div className="font-medium">{c.company_name}</div>
+                              <div className="font-medium">{(c as any).company_name || c.name}</div>
                               {c.email && <div className="text-sm text-gray-600">{c.email}</div>}
                             </div>
                           ))
@@ -1973,7 +1973,7 @@ ${companySettings?.company_name || 'Your Company'}`
                   {lineItems.map((item) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-4 relative">
-                        <div ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div ref={el => { itemDropdownRefs.current[item.id] = el; }}>
                           <Input
                             value={item.item}
                             onChange={(e) => handleItemSearch(item.id, e.target.value)}
@@ -2240,7 +2240,7 @@ ${companySettings?.company_name || 'Your Company'}`
                         <strong>Date:</strong> ${date}<br>
                         <strong>Due Date:</strong> ${dueDate}<br>
                         ${sourceSalesOrderId && documentRelationships.salesOrder ? `<strong>Sales Order #:</strong> ${documentRelationships.salesOrder.number}<br>` : ''}
-                        ${salesReps.find(rep => rep.id === salesRepId)?.name ? `<strong>Sales Rep:</strong> ${salesReps.find(rep => rep.id === salesRepId)?.name}<br>` : ''}
+                        ${(salesReps.find(rep => rep.id === salesRepId) as any)?.name ? `<strong>Sales Rep:</strong> ${(salesReps.find(rep => rep.id === salesRepId) as any)?.name}<br>` : ''}
                       </div>
                       <div>
                         <strong>Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}<br>
@@ -2391,10 +2391,10 @@ ${companySettings?.company_name || 'Your Company'}`
                       {lineItems.filter(item => item.description.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || 
-                                         inventoryItem?.last_cost || 
-                                         inventoryItem?.purchase_price || 
-                                         product?.cost || 0
+                        const costEach = (inventoryItem as any)?.weighted_average_cost ||
+                                         (inventoryItem as any)?.last_cost ||
+                                         (inventoryItem as any)?.purchase_price ||
+                                         (product as any)?.cost || 0
                         const totalItemCost = costEach * item.qty
                         const totalItemRevenue = item.amount
                         const itemProfit = totalItemRevenue - totalItemCost

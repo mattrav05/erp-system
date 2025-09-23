@@ -244,7 +244,7 @@ export default function ShippingList() {
       console.log('- Creating deduction records for review')
       
       // Simulate duplicate detection
-      const existingOrderIds = deductions.map(d => d.shipstation_order_id)
+      const existingOrderIds = deductions.map(d => (d as any).shipstation_order_id)
       console.log('Existing order IDs in system:', existingOrderIds.length)
       console.log('Duplicate detection: ACTIVE')
       
@@ -263,7 +263,7 @@ export default function ShippingList() {
       
     } catch (error) {
       console.error('Error syncing with ShipStation:', error)
-      alert('Sync failed: ' + error.message)
+      alert('Sync failed: ' + (error as any).message)
     } finally {
       setIsRefreshing(false)
     }

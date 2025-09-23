@@ -415,6 +415,7 @@ export default function EditPurchaseOrderQuickBooksStyle({
               relationships.invoice = {
                 id: invoice.id,
                 number: invoice.invoice_number,
+                status: invoice.status || 'PENDING',
                 date: invoice.invoice_date,
                 amount: invoice.total_amount
               }
@@ -449,7 +450,7 @@ export default function EditPurchaseOrderQuickBooksStyle({
                 date: invoice.invoice_date,
                 amount: invoice.total_amount || 0
               }
-            } else if (invError && invError.code === 'PGRST116') {
+            } else if (invError && (invError as any).code === 'PGRST116') {
               // Invoice was deleted, clear the reference in the SO
               // Multi-invoice model - no need to clear SO reference since converted_to_invoice_id doesn't exist
               console.log('Referenced invoice no longer exists (multi-invoice model)')
@@ -856,7 +857,7 @@ export default function EditPurchaseOrderQuickBooksStyle({
     } catch (error) {
       console.error('Error deleting purchase order:', error)
       console.error('Error details:', JSON.stringify(error, null, 2))
-      alert(`Error deleting purchase order: ${error.message || 'Unknown error'}`)
+      alert(`Error deleting purchase order: ${(error as any).message || 'Unknown error'}`)
     }
   }
 
@@ -1363,14 +1364,14 @@ ${companySettings?.company_name || 'Your Company'}`
                                 className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100"
                                 onClick={() => handleVendorSelect(v)}
                               >
-                                <div className="font-medium">{v.company_name}</div>
-                                {v.contact_name && (
-                                  <div className="text-sm text-gray-500">{v.contact_name}</div>
+                                <div className="font-medium">{(v as any).company_name || v.name}</div>
+                                {(v as any).contact_name && (
+                                  <div className="text-sm text-gray-500">{(v as any).contact_name}</div>
                                 )}
                               </button>
                             ))}
                             
-                            {vendorSearch && !getFilteredVendors().find(v => v.company_name.toLowerCase() === vendorSearch.toLowerCase()) && (
+                            {vendorSearch && !getFilteredVendors().find(v => ((v as any).company_name || v.name).toLowerCase() === vendorSearch.toLowerCase()) && (
                               <button
                                 onClick={handleQuickAddVendor}
                                 className="w-full px-3 py-2 text-left bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100"
@@ -1489,14 +1490,14 @@ ${companySettings?.company_name || 'Your Company'}`
                   <div className="text-sm text-gray-700">
                     <div className="font-semibold">{vendor}</div>
                     <div className="text-gray-500 mt-1">
-                      {vendors.find(v => v.id === vendorId)?.contact_name && (
-                        <div>Contact: {vendors.find(v => v.id === vendorId)?.contact_name}</div>
+                      {(vendors.find(v => v.id === vendorId) as any)?.contact_name && (
+                        <div>Contact: {(vendors.find(v => v.id === vendorId) as any)?.contact_name}</div>
                       )}
-                      {vendors.find(v => v.id === vendorId)?.phone && (
-                        <div>Phone: {vendors.find(v => v.id === vendorId)?.phone}</div>
+                      {(vendors.find(v => v.id === vendorId) as any)?.contact_phone && (
+                        <div>Phone: {(vendors.find(v => v.id === vendorId) as any)?.contact_phone}</div>
                       )}
-                      {vendors.find(v => v.id === vendorId)?.email && (
-                        <div>Email: {vendors.find(v => v.id === vendorId)?.email}</div>
+                      {(vendors.find(v => v.id === vendorId) as any)?.contact_email && (
+                        <div>Email: {(vendors.find(v => v.id === vendorId) as any)?.contact_email}</div>
                       )}
                     </div>
                   </div>
@@ -1602,7 +1603,7 @@ Attn: Receiving Dept"
                   {lineItems.map((item, index) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td style={{ width: columnWidths.item, overflow: 'visible', position: 'relative' }} className="px-4 py-3">
-                        <div className="relative" ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div className="relative" ref={el => { itemDropdownRefs.current[item.id] = el; }}>
                           <Input
                             value={item.item}
                             onChange={(e) => {
@@ -1634,7 +1635,7 @@ Attn: Receiving Dept"
                                     <div className="font-medium text-sm">{inv.products.sku}</div>
                                     <div className="text-xs text-gray-500">{inv.products.name}</div>
                                     <div className="text-xs text-gray-400">
-                                      ${(inv.last_cost || inv.purchase_price || inv.products.default_purchase_price || 0).toFixed(2)} • 
+                                      ${((inv as any).last_cost || (inv as any).purchase_price || (inv.products as any).default_purchase_price || 0).toFixed(2)} •
                                       {inv.quantity_available} available
                                     </div>
                                   </button>
@@ -1934,14 +1935,14 @@ Attn: Receiving Dept"
                         <div className="font-semibold">{vendor || 'No vendor selected'}</div>
                         {vendorId && vendors.find(v => v.id === vendorId) && (
                           <div className="mt-1 space-y-1">
-                            {vendors.find(v => v.id === vendorId)?.contact_name && (
-                              <div>Contact: {vendors.find(v => v.id === vendorId)?.contact_name}</div>
+                            {((vendors.find(v => v.id === vendorId) as any)?.contact_name || vendors.find(v => v.id === vendorId)?.name) && (
+                              <div>Contact: {(vendors.find(v => v.id === vendorId) as any)?.contact_name || vendors.find(v => v.id === vendorId)?.name}</div>
                             )}
-                            {vendors.find(v => v.id === vendorId)?.phone && (
-                              <div>Phone: {vendors.find(v => v.id === vendorId)?.phone}</div>
+                            {((vendors.find(v => v.id === vendorId) as any)?.phone || vendors.find(v => v.id === vendorId)?.contact_phone) && (
+                              <div>Phone: {(vendors.find(v => v.id === vendorId) as any)?.phone || vendors.find(v => v.id === vendorId)?.contact_phone}</div>
                             )}
-                            {vendors.find(v => v.id === vendorId)?.email && (
-                              <div>Email: {vendors.find(v => v.id === vendorId)?.email}</div>
+                            {((vendors.find(v => v.id === vendorId) as any)?.email || vendors.find(v => v.id === vendorId)?.contact_email) && (
+                              <div>Email: {(vendors.find(v => v.id === vendorId) as any)?.email || vendors.find(v => v.id === vendorId)?.contact_email}</div>
                             )}
                           </div>
                         )}

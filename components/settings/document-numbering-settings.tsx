@@ -182,7 +182,7 @@ export default function DocumentNumberingSettings() {
 
         if (allDocs) {
           for (const doc of allDocs) {
-            const docNumber = doc[docTypeInfo.numberColumn]
+            const docNumber = (doc as any)[docTypeInfo.numberColumn]
             if (docNumber) {
               conflictingNumbers.push(docNumber)
               const match = docNumber.match(/(\d+)$/)
@@ -278,7 +278,7 @@ export default function DocumentNumberingSettings() {
           let suggestedNumber = currentNum + 1
           if (conflictData && conflictData.length > 0) {
             const lastDoc = conflictData[0]
-            const lastNumber = lastDoc[documentTypes.find(dt => dt.type === editingConfig.document_type)!.numberColumn]
+            const lastNumber = (lastDoc as any)[documentTypes.find(dt => dt.type === editingConfig.document_type)!.numberColumn]
             const match = lastNumber.match(/(\d+)$/)
             if (match) {
               suggestedNumber = parseInt(match[1]) + 1

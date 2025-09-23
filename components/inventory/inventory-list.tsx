@@ -980,7 +980,10 @@ export default function InventoryList() {
         weighted_average_cost: newItem.weighted_average_cost,
         last_cost: newItem.weighted_average_cost,
         sales_price: newItem.sales_price,
-        location: 'MAIN'
+        location: 'MAIN',
+        margin_percent: 33.3,
+        markup_percent: 50.0,
+        is_active: true
       }
       
       setInventory(prev => [...prev, fallbackItem])
@@ -1700,7 +1703,10 @@ export default function InventoryList() {
             default_tax_rate: editingItem.default_tax_rate,
             reorder_point: editingItem.product.reorder_point,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            margin_percent: editingItem.margin_percent || 33.3,
+            markup_percent: editingItem.markup_percent || 50.0,
+            is_active: editingItem.is_active !== undefined ? editingItem.is_active : true
           }}
           isOpen={true}
           onClose={() => {

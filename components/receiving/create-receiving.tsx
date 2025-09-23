@@ -8,16 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Package, CheckCircle, AlertTriangle, Truck, Calendar, Hash, Save, Search, Building2, DollarSign, Clock } from 'lucide-react'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string }
   purchase_order_lines?: PurchaseOrderLine[]
 }
 
-type PurchaseOrderLine = Database['public']['Tables']['purchase_order_lines']['Row'] & {
+type PurchaseOrderLine = any & {
   products?: { name: string; sku: string }
 }
 
-type InventoryReceipt = Database['public']['Tables']['inventory_receipts']['Row'] & {
+type InventoryReceipt = any & {
   products?: { name: string; sku: string }
   purchase_order_lines?: {
     purchase_orders?: { po_number: string }

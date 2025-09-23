@@ -6,7 +6,7 @@ import CreatePurchaseOrderQuickBooksStyle from '@/components/purchase-orders/cre
 import EditPurchaseOrderQuickBooksStyle from '@/components/purchase-orders/edit-purchase-order-quickbooks-style'
 import { Database } from '@/lib/supabase'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string; contact_name: string | null }
   sales_reps?: { first_name: string; last_name: string; employee_code: string }
 }

@@ -7,7 +7,7 @@ import InvoicesList from './invoices-list'
 import CreateInvoiceQuickBooksStyle from './create-invoice-quickbooks-style'
 import EditInvoiceQuickBooksStyle from './edit-invoice-quickbooks-style'
 
-type Invoice = Database['public']['Tables']['invoices']['Row'] & {
+type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
 }
 

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { X, Save, Plus, Trash2, Package, FileText, ChevronLeft, ChevronRight, Printer, Mail, Copy, Settings2, Calculator, Receipt, ArrowLeft, ArrowRight, Search, FileCheck, AlertTriangle, Eye } from 'lucide-react'
-// import TaxCodeDropdown from '@/components/ui/tax-code-dropdown' // No longer needed - using simple taxable checkbox
+import TaxCodeDropdown from '@/components/ui/tax-code-dropdown'
 import ContextMenu from '@/components/ui/context-menu'
 import TemplateEditor from '@/components/templates/template-editor'
 
@@ -230,7 +230,7 @@ export default function CreateSalesOrderQuickBooksStyle({
     const newTotalCost = lineItems.reduce((sum, item) => {
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       const product = products.find(p => p.id === item.product_id)
-      const itemCost = (inventoryItem?.weighted_average_cost || product?.cost || 0) * item.qty
+      const itemCost = ((inventoryItem as any)?.weighted_average_cost || (product as any)?.cost || 0) * item.qty
       return sum + itemCost
     }, 0)
     
@@ -283,6 +283,7 @@ export default function CreateSalesOrderQuickBooksStyle({
     const lastNum = lastSO ? parseInt(lastSO.split('-')[1]) : 0
     const newSONumber = `SO-${String(lastNum + 1).padStart(6, '0')}`
     setSoNumber(newSONumber)
+    return newSONumber
   }
 
   const updateLineItem = (lineId: string, field: keyof LineItem, value: any) => {
@@ -826,17 +827,17 @@ export default function CreateSalesOrderQuickBooksStyle({
               {customerDropdown && (
                 <div className="absolute z-20 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                   {customers
-                    .filter(c => (c.company_name || c.name || '').toLowerCase().includes(customer.toLowerCase()))
+                    .filter(c => ((c as any).company_name || c.name || '').toLowerCase().includes(customer.toLowerCase()))
                     .map(c => (
                       <button
                         key={c.id}
                         onClick={() => {
-                          setCustomer(c.company_name || c.name || '')
+                          setCustomer((c as any).company_name || c.name || '')
                           setCustomerId(c.id)
                           setCustomerDropdown(false)
 
                           // Auto-populate address from customer record
-                          let billToText = c.company_name || c.name || ''
+                          let billToText = (c as any).company_name || c.name || ''
                           if (c.billing_address) {
                             billToText += '\n' + c.billing_address
                           }
@@ -850,7 +851,7 @@ export default function CreateSalesOrderQuickBooksStyle({
 
                           // Set shipping address if different
                           if (c.shipping_address && c.shipping_address !== c.billing_address) {
-                            setShipTo((c.company_name || c.name || '') + '\n' + c.shipping_address)
+                            setShipTo(((c as any).company_name || c.name || '') + '\n' + c.shipping_address)
                             setShipSameAsBill(false)
                           } else {
                             setShipTo(billToText)
@@ -859,12 +860,12 @@ export default function CreateSalesOrderQuickBooksStyle({
                         }}
                         className="w-full px-3 py-2 text-left hover:bg-blue-50 text-sm"
                       >
-                        <div className="font-medium">{c.company_name || c.name}</div>
+                        <div className="font-medium">{(c as any).company_name || c.name}</div>
                         {c.email && <div className="text-xs text-gray-500">{c.email}</div>}
                       </button>
                     ))}
                     
-                    {customer && !customers.find(c => (c.company_name || c.name || '').toLowerCase() === customer.toLowerCase()) && (
+                    {customer && !customers.find(c => ((c as any).company_name || c.name || '').toLowerCase() === customer.toLowerCase()) && (
                       <button
                         onClick={handleQuickAddCustomer}
                         className="w-full px-3 py-2 text-left bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100"
@@ -1331,7 +1332,7 @@ export default function CreateSalesOrderQuickBooksStyle({
                       {lineItems.filter(item => item.description.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const costEach = (inventoryItem as any)?.weighted_average_cost || (product as any)?.cost || 0
                         const totalItemCost = costEach * item.qty
                         const totalItemRevenue = item.amount
                         const itemProfit = totalItemRevenue - totalItemCost

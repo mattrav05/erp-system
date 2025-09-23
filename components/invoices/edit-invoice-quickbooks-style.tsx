@@ -718,11 +718,11 @@ export default function EditInvoiceQuickBooksStyle({
     if ((customerData as any).address_line_1) {
       billToText += '\n' + (customerData as any).address_line_1
     }
-    if (customerData.address_line_2) {
-      billToText += '\n' + customerData.address_line_2
+    if ((customerData as any).address_line_2) {
+      billToText += '\n' + (customerData as any).address_line_2
     }
-    if (customerData.city || customerData.state || customerData.zip_code) {
-      billToText += '\n' + [customerData.city, customerData.state, customerData.zip_code].filter(Boolean).join(', ')
+    if ((customerData as any).city || (customerData as any).state || (customerData as any).zip_code) {
+      billToText += '\n' + [(customerData as any).city, (customerData as any).state, (customerData as any).zip_code].filter(Boolean).join(', ')
     }
     if (customerData.phone) {
       billToText += '\nPhone: ' + customerData.phone
@@ -829,7 +829,7 @@ export default function EditInvoiceQuickBooksStyle({
       console.error('=== CUSTOMER CREATE ERROR ===')
       console.error('Error:', error)
       
-      let errorMessage = error?.message || 'Unknown error occurred'
+      let errorMessage = (error as any)?.message || 'Unknown error occurred'
       
       // Provide more specific error messages
       if (errorMessage.includes('violates check constraint')) {
@@ -897,12 +897,12 @@ export default function EditInvoiceQuickBooksStyle({
     updateLineItem(lineId, 'product_id', product.id)
     
     // Use sales price from product, fallback to cost if no sales price
-    const salePrice = product.selling_price || inventoryItem?.purchase_price || 0
+    const salePrice = (product as any).selling_price || (inventoryItem as any)?.purchase_price || 0
     updateLineItem(lineId, 'rate', salePrice)
     updateLineItem(lineId, 'amount', salePrice * 1) // qty is 1 by default
     
     // Apply default tax setting from product
-    updateLineItem(lineId, 'is_taxable', product.is_taxable || false)
+    updateLineItem(lineId, 'is_taxable', (product as any).is_taxable || false)
     
     setActiveItemDropdowns(prev => ({ ...prev, [lineId]: false }))
   }
@@ -1385,7 +1385,7 @@ ${companySettings?.company_name || 'Your Company'}`
   }
 
   const filteredCustomers = customers.filter(c =>
-    c.company_name.toLowerCase().includes(customer.toLowerCase())
+    ((c as any).company_name || c.name).toLowerCase().includes(customer.toLowerCase())
   ).slice(0, 8)
 
   const getFilteredProducts = (lineId: string) => {
@@ -1573,7 +1573,7 @@ ${companySettings?.company_name || 'Your Company'}`
                               className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => selectCustomer(c)}
                             >
-                              <div className="font-medium">{c.company_name}</div>
+                              <div className="font-medium">{(c as any).company_name || c.name}</div>
                               {c.email && <div className="text-sm text-gray-600">{c.email}</div>}
                             </div>
                           ))
@@ -1794,7 +1794,7 @@ ${companySettings?.company_name || 'Your Company'}`
                   {lineItems.map((item, index) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-4">
-                        <div className="relative" ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div className="relative" ref={el => { itemDropdownRefs.current[item.id] = el; }}>
                           <Input
                             value={item.item}
                             onChange={(e) => {
@@ -1847,7 +1847,7 @@ ${companySettings?.company_name || 'Your Company'}`
                                     <div className="font-medium text-sm">{p.sku || p.name}</div>
                                     <div className="text-xs text-gray-600">{p.name}</div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                      Price: ${p.default_price?.toFixed(2) || '0.00'}
+                                      Price: ${(p as any).default_price?.toFixed(2) || '0.00'}
                                     </div>
                                   </div>
                                 ))
@@ -2267,10 +2267,10 @@ ${companySettings?.company_name || 'Your Company'}`
                       {lineItems.filter(item => item.description?.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || 
-                                         inventoryItem?.last_cost || 
-                                         inventoryItem?.purchase_price || 
-                                         product?.cost || 0
+                        const costEach = (inventoryItem as any)?.weighted_average_cost ||
+                                         (inventoryItem as any)?.last_cost ||
+                                         (inventoryItem as any)?.purchase_price ||
+                                         (product as any)?.cost || 0
                         const totalItemCost = costEach * Number(item.qty || 0)
                         const totalItemRevenue = Number(item.amount || 0)
                         const itemProfit = totalItemRevenue - totalItemCost

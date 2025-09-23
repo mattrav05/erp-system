@@ -2022,7 +2022,7 @@ Phone: (555) 123-4567"
                   >
                     <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-3 py-2 relative" style={{width: `${columnWidths.item}px`}}>
-                        <div ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div ref={el => { itemDropdownRefs.current[item.id] = el; }}>
                           <Input
                             value={item.item}
                           onChange={(e) => handleItemSearch(item.id, e.target.value)}

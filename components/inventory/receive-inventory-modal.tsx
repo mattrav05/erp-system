@@ -14,7 +14,7 @@ type PurchaseOrder = any & {
   purchase_order_lines?: PurchaseOrderLine[]
 }
 
-type PurchaseOrderLine = Database['public']['Tables']['purchase_order_lines']['Row'] & {
+type PurchaseOrderLine = any & {
   products?: { name: string; sku: string }
 }
 
