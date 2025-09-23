@@ -6,16 +6,17 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Hash, 
-  FileText, 
-  Receipt, 
-  ShoppingCart, 
+import {
+  Hash,
+  FileText,
+  Receipt,
+  ShoppingCart,
   Package,
   AlertTriangle,
   CheckCircle,
   RotateCcw,
-  Save
+  Save,
+  RefreshCw
 } from 'lucide-react'
 
 interface NumberingConfig {
@@ -47,12 +48,15 @@ export default function DocumentNumberingSettings() {
   const [configs, setConfigs] = useState<NumberingConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const [editingConfig, setEditingConfig] = useState<NumberingConfig | null>(null)
   const [newStartNumber, setNewStartNumber] = useState('')
   const [newPrefix, setNewPrefix] = useState('')
   const [newFullFormat, setNewFullFormat] = useState('')
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [isValidating, setIsValidating] = useState(false)
+  const [componentReady, setComponentReady] = useState(false)
 
   const documentTypes = [
     { 
@@ -94,24 +98,77 @@ export default function DocumentNumberingSettings() {
   ]
 
   useEffect(() => {
+    console.log('Document numbering: Component mounted, starting initialization...')
     loadCurrentConfigs()
   }, [])
 
+  // Add timeout handling to prevent infinite loading states
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Document numbering loading timeout - forcing error state')
+          setIsLoading(false)
+          setError('Loading timeout - please refresh the page or try again')
+        }
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isLoading])
+
+  // Component readiness monitoring
+  useEffect(() => {
+    if (!isLoading && !error) {
+      console.log('Document numbering: Component ready')
+      setComponentReady(true)
+    } else {
+      setComponentReady(false)
+    }
+  }, [isLoading, error])
+
+  // Periodic health check to detect if component becomes unresponsive
+  useEffect(() => {
+    const healthCheck = setInterval(() => {
+      if (!componentReady && !isLoading && !error) {
+        console.warn('Document numbering: Component appears to be in invalid state, triggering recovery')
+        loadCurrentConfigs()
+      }
+    }, 5000) // Check every 5 seconds
+
+    return () => clearInterval(healthCheck)
+  }, [componentReady, isLoading, error])
+
   const loadCurrentConfigs = async () => {
+    console.log('Document numbering: Starting to load configs...')
     setIsLoading(true)
+    setError(null)
     try {
       // Get company settings with numbering configuration
+      console.log('Document numbering: Fetching company settings...')
       const { data: companySettings, error } = await supabase
         .from('company_settings')
         .select('*')
         .eq('is_active', true)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.log('Document numbering: Database error:', error)
+        // If no settings found, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('No company settings found, creating defaults...')
+          await createDefaultCompanySettings()
+          return // Will reload after creation
+        }
+        throw error
+      }
 
       if (!companySettings) {
+        console.log('Document numbering: No settings data returned')
         throw new Error('No active company settings found')
       }
+
+      console.log('Document numbering: Settings loaded successfully', companySettings)
 
       const loadedConfigs: NumberingConfig[] = [
         {
@@ -140,13 +197,95 @@ export default function DocumentNumberingSettings() {
         }
       ]
 
+      console.log('Document numbering: Configs processed:', loadedConfigs)
       setConfigs(loadedConfigs)
-    } catch (error) {
-      console.error('Error loading numbering configs:', error)
-      alert('Failed to load numbering settings. Please try again.')
+      setRetryCount(0) // Reset retry count on success
+    } catch (error: any) {
+      console.error('Document numbering: Error loading configs:', error)
+
+      // After 3 retry attempts, use fallback mode instead of staying in error state
+      if (retryCount >= 2) {
+        console.log('Document numbering: Max retries reached, switching to fallback mode')
+        setFallbackMode()
+        return
+      }
+
+      setError(error.message || 'Failed to load numbering settings')
     } finally {
+      console.log('Document numbering: Loading complete')
       setIsLoading(false)
     }
+  }
+
+  const createDefaultCompanySettings = async () => {
+    try {
+      console.log('Document numbering: Creating default company settings...')
+      const defaultSettings = {
+        company_name: 'Your Company',
+        estimate_prefix: 'EST',
+        estimate_next_number: 1,
+        invoice_prefix: 'INV',
+        invoice_next_number: 1,
+        sales_order_prefix: 'SO',
+        sales_order_next_number: 1,
+        purchase_order_prefix: 'PO',
+        purchase_order_next_number: 1,
+        is_active: true
+      }
+
+      const { error } = await supabase
+        .from('company_settings')
+        .insert(defaultSettings)
+
+      if (error) throw error
+
+      console.log('Document numbering: Created default company settings')
+      // Reload configs after creating defaults
+      await loadCurrentConfigs()
+    } catch (error) {
+      console.error('Document numbering: Error creating default settings:', error)
+      // If we can't create defaults, use client-side fallback
+      setFallbackMode()
+    }
+  }
+
+  const setFallbackMode = () => {
+    console.log('Document numbering: Entering fallback mode with local defaults')
+    const fallbackConfigs: NumberingConfig[] = [
+      {
+        document_type: 'estimate',
+        current_number: 0,
+        prefix: 'EST',
+        format: 'EST-######'
+      },
+      {
+        document_type: 'invoice',
+        current_number: 0,
+        prefix: 'INV',
+        format: 'INV-######'
+      },
+      {
+        document_type: 'sales_order',
+        current_number: 0,
+        prefix: 'SO',
+        format: 'SO-######'
+      },
+      {
+        document_type: 'purchase_order',
+        current_number: 0,
+        prefix: 'PO',
+        format: 'PO-######'
+      }
+    ]
+
+    setConfigs(fallbackConfigs)
+    setIsLoading(false)
+    setError('Database unavailable - using local defaults. Some features may be limited.')
+  }
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1)
+    loadCurrentConfigs()
   }
 
   const validateNewFormat = async (docType: string, fullFormat: string): Promise<ValidationResult> => {
@@ -327,14 +466,73 @@ export default function DocumentNumberingSettings() {
     )
   }
 
+  if (error && !configs.length) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Document Numbering</h3>
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">{error}</p>
+          <div className="space-x-2 flex flex-wrap justify-center gap-2">
+            {retryCount < 2 && (
+              <Button onClick={handleRetry} className="bg-blue-600 hover:bg-blue-700">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry {retryCount > 0 && `(${retryCount + 1}/3)`}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null)
+                createDefaultCompanySettings()
+              }}
+            >
+              Create Default Settings
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null)
+                setFallbackMode()
+              }}
+              className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+              Use Offline Mode
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Numbering</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-xl font-semibold text-gray-900">Document Numbering</h2>
+          {error && configs.length > 0 && (
+            <Badge className="bg-orange-100 text-orange-800">
+              Limited Mode
+            </Badge>
+          )}
+          {componentReady && !error && (
+            <Badge className="bg-green-100 text-green-800">
+              Connected
+            </Badge>
+          )}
+        </div>
         <p className="text-gray-600">
           Configure starting numbers for your business documents. The system will intelligently handle conflicts and continue sequentially.
         </p>
+        {error && configs.length > 0 && (
+          <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-sm text-orange-800">
+              <AlertTriangle className="w-4 h-4 inline mr-1" />
+              {error} Some features may not work correctly.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Document Types */}
