@@ -22,7 +22,9 @@ import {
   Hash,
   Layers3,
   Upload,
-  Check
+  Check,
+  Download,
+  RefreshCw
 } from 'lucide-react'
 import SalesRepsManagement from './sales-reps-settings'
 import TaxCodesManagement from './tax-codes-settings'
@@ -57,6 +59,7 @@ export default function SettingsPage() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const templateImportRef = useRef<HTMLInputElement>(null)
 
   // Load saved logo URL on component mount
   useEffect(() => {
@@ -155,6 +158,216 @@ export default function SettingsPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+    }
+  }
+
+  // Export templates to JSON file
+  const handleExportTemplates = async () => {
+    try {
+      // Fetch all templates from database
+      const { data: estimateTemplates, error: estError } = await supabase
+        .from('estimate_templates')
+        .select('*')
+
+      if (estError) throw estError
+
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        companyLogoUrl: logoUrl || localStorage.getItem('companyLogoUrl'),
+        templates: {
+          estimates: estimateTemplates || []
+        }
+      }
+
+      // Create and download JSON file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `templates-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      alert('Templates exported successfully!')
+    } catch (error) {
+      console.error('Error exporting templates:', error)
+      alert('Failed to export templates. Please try again.')
+    }
+  }
+
+  // Import templates from JSON file
+  const handleImportTemplates = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const importData = JSON.parse(text)
+
+      if (!importData.templates) {
+        throw new Error('Invalid template file format')
+      }
+
+      // Import estimate templates
+      if (importData.templates.estimates && importData.templates.estimates.length > 0) {
+        for (const template of importData.templates.estimates) {
+          // Remove id and timestamps to create new entries
+          const { id, created_at, updated_at, ...templateData } = template
+
+          // Check if template with same name exists
+          const { data: existing } = await supabase
+            .from('estimate_templates')
+            .select('id')
+            .eq('name', templateData.name)
+            .single()
+
+          if (existing) {
+            // Update existing template
+            const { error } = await supabase
+              .from('estimate_templates')
+              .update(templateData)
+              .eq('id', existing.id)
+
+            if (error) throw error
+          } else {
+            // Insert new template
+            const { error } = await supabase
+              .from('estimate_templates')
+              .insert(templateData)
+
+            if (error) throw error
+          }
+        }
+      }
+
+      // Import logo URL if present
+      if (importData.companyLogoUrl) {
+        localStorage.setItem('companyLogoUrl', importData.companyLogoUrl)
+        setLogoUrl(importData.companyLogoUrl)
+      }
+
+      alert('Templates imported successfully!')
+
+      // Reset file input
+      if (templateImportRef.current) {
+        templateImportRef.current.value = ''
+      }
+    } catch (error) {
+      console.error('Error importing templates:', error)
+      alert('Failed to import templates. Please check the file format and try again.')
+    }
+  }
+
+  // Reset templates to defaults
+  const handleResetToDefaults = async () => {
+    if (!confirm('Are you sure you want to reset all templates to defaults? This will remove all customizations.')) {
+      return
+    }
+
+    try {
+      // Delete all user-created templates (keep system defaults)
+      const { error: deleteError } = await supabase
+        .from('estimate_templates')
+        .delete()
+        .eq('template_type', 'USER_SAVED')
+
+      if (deleteError) throw deleteError
+
+      // Reset default templates
+      const defaultTemplates = [
+        {
+          name: 'Standard Estimate',
+          description: 'Default estimate template',
+          template_type: 'GENERAL',
+          is_default: true,
+          header_text: 'ESTIMATE',
+          footer_text: 'Thank you for your business!',
+          terms_and_conditions: 'This estimate is valid for 30 days from the date of issue.',
+          show_item_descriptions: true,
+          show_taxes: true,
+          show_shipping: true,
+          primary_color: '#3B82F6',
+          secondary_color: '#1F2937',
+          accent_color: '#10B981',
+          font_family: 'Inter',
+          font_size: 12
+        },
+        {
+          name: 'Professional Estimate',
+          description: 'Professional estimate template with detailed layout',
+          template_type: 'GENERAL',
+          is_default: false,
+          header_text: 'PROFESSIONAL ESTIMATE',
+          footer_text: 'We appreciate your business and look forward to working with you.',
+          terms_and_conditions: 'Terms: Net 30. This estimate is valid for 45 days.',
+          show_item_descriptions: true,
+          show_taxes: true,
+          show_shipping: true,
+          primary_color: '#4F46E5',
+          secondary_color: '#111827',
+          accent_color: '#059669',
+          font_family: 'Inter',
+          font_size: 11
+        },
+        {
+          name: 'Simple Estimate',
+          description: 'Minimal estimate template',
+          template_type: 'GENERAL',
+          is_default: false,
+          header_text: 'QUOTE',
+          footer_text: 'Thank you!',
+          terms_and_conditions: 'Valid for 30 days.',
+          show_item_descriptions: false,
+          show_taxes: true,
+          show_shipping: false,
+          primary_color: '#000000',
+          secondary_color: '#4B5563',
+          accent_color: '#EF4444',
+          font_family: 'Inter',
+          font_size: 12
+        }
+      ]
+
+      // Insert default templates
+      for (const template of defaultTemplates) {
+        const { data: existing } = await supabase
+          .from('estimate_templates')
+          .select('id')
+          .eq('name', template.name)
+          .eq('template_type', 'GENERAL')
+          .single()
+
+        if (existing) {
+          // Update existing default
+          const { error } = await supabase
+            .from('estimate_templates')
+            .update(template)
+            .eq('id', existing.id)
+
+          if (error) throw error
+        } else {
+          // Insert new default
+          const { error } = await supabase
+            .from('estimate_templates')
+            .insert(template)
+
+          if (error) throw error
+        }
+      }
+
+      // Clear custom logo
+      localStorage.removeItem('companyLogoUrl')
+      setLogoUrl('')
+
+      alert('Templates have been reset to defaults!')
+    } catch (error) {
+      console.error('Error resetting templates:', error)
+      alert('Failed to reset templates. Please try again.')
     }
   }
 
@@ -431,13 +644,36 @@ export default function SettingsPage() {
                 <div className="pt-4 border-t">
                   <h4 className="font-medium mb-2">Quick Actions</h4>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline">
+                    <input
+                      ref={templateImportRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportTemplates}
+                      className="hidden"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => templateImportRef.current?.click()}
+                    >
+                      <Upload className="w-3 h-3 mr-1" />
                       Import Templates
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleExportTemplates}
+                    >
+                      <Download className="w-3 h-3 mr-1" />
                       Export Templates
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleResetToDefaults}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
                       Reset to Defaults
                     </Button>
                   </div>
