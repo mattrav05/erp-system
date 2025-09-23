@@ -522,10 +522,19 @@ export default function TemplateEditor({ onClose, templateType = 'estimate', cur
                 <div>
                   <label className="block text-sm font-medium mb-1">Logo URL</label>
                   <Input
-                    value={template.logoUrl}
+                    value={template.logoUrl || localStorage.getItem('companyLogoUrl') || ''}
                     onChange={(e) => setTemplate(prev => ({ ...prev, logoUrl: e.target.value }))}
-                    placeholder="https://..."
+                    placeholder="https://... (or upload in Settings > Document Templates)"
                   />
+                  {(template.logoUrl || localStorage.getItem('companyLogoUrl')) && (
+                    <div className="mt-2">
+                      <img
+                        src={template.logoUrl || localStorage.getItem('companyLogoUrl') || ''}
+                        alt="Logo Preview"
+                        className="h-12 object-contain bg-gray-50 rounded border p-1"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div>

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
-  Users, 
-  Settings, 
+import { supabase } from '@/lib/supabase'
+import {
+  Users,
+  Settings,
   Database,
   Mail,
   Shield,
@@ -19,7 +20,9 @@ import {
   Building2,
   ShoppingCart,
   Hash,
-  Layers3
+  Layers3,
+  Upload,
+  Check
 } from 'lucide-react'
 import SalesRepsManagement from './sales-reps-settings'
 import TaxCodesManagement from './tax-codes-settings'
@@ -50,6 +53,110 @@ export default function SettingsPage() {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('sales-reps')
   const [showTemplateEditor, setShowTemplateEditor] = useState(false)
   const [showTermsEditor, setShowTermsEditor] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string>('')
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load saved logo URL on component mount
+  useEffect(() => {
+    const savedLogoUrl = localStorage.getItem('companyLogoUrl')
+    if (savedLogoUrl) {
+      setLogoUrl(savedLogoUrl)
+    }
+  }, [])
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    setIsUploadingLogo(true)
+    setUploadSuccess(false)
+
+    try {
+      // Create unique file name
+      const fileExt = file.name.split('.').pop()
+      const fileName = `company-logo-${Date.now()}.${fileExt}`
+      const filePath = `logos/${fileName}`
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('company-assets')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (error) {
+        // If bucket doesn't exist, try to create it
+        if (error.message.includes('Bucket not found')) {
+          // Create the bucket
+          const { data: bucketData, error: bucketError } = await supabase.storage
+            .createBucket('company-assets', {
+              public: true,
+              fileSizeLimit: 5242880 // 5MB
+            })
+
+          if (bucketError) {
+            throw new Error('Failed to create storage bucket: ' + bucketError.message)
+          }
+
+          // Retry upload
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from('company-assets')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: true
+            })
+
+          if (retryError) {
+            throw retryError
+          }
+        } else {
+          throw error
+        }
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(filePath)
+
+      if (urlData?.publicUrl) {
+        setLogoUrl(urlData.publicUrl)
+        setUploadSuccess(true)
+
+        // Save logo URL to a settings table or localStorage for now
+        localStorage.setItem('companyLogoUrl', urlData.publicUrl)
+
+        // Reset success message after 3 seconds
+        setTimeout(() => setUploadSuccess(false), 3000)
+
+        console.log('Logo uploaded successfully:', urlData.publicUrl)
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error)
+      alert('Failed to upload logo. Please try again.')
+    } finally {
+      setIsUploadingLogo(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
 
   const categories = [
     {
@@ -257,8 +364,50 @@ export default function SettingsPage() {
                   <h4 className="font-medium mb-2">Global Settings</h4>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Company Logo</span>
-                      <Button size="sm" variant="outline">Upload Logo</Button>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">Company Logo</span>
+                        {logoUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={logoUrl}
+                              alt="Company Logo"
+                              className="h-16 object-contain bg-gray-50 rounded border p-2"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isUploadingLogo}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {isUploadingLogo ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-900 mr-1" />
+                              Uploading...
+                            </>
+                          ) : uploadSuccess ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1 text-green-600" />
+                              Uploaded!
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-3 h-3 mr-1" />
+                              Upload Logo
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Default Currency</span>
