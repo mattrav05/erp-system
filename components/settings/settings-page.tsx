@@ -55,6 +55,7 @@ export default function SettingsPage() {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('sales-reps')
   const [showTemplateEditor, setShowTemplateEditor] = useState(false)
   const [showTermsEditor, setShowTermsEditor] = useState(false)
+  const [selectedTemplateType, setSelectedTemplateType] = useState<'estimate' | 'invoice' | 'sales_order' | 'purchase_order'>('estimate')
   const [logoUrl, setLogoUrl] = useState<string>('')
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
@@ -534,10 +535,10 @@ export default function SettingsPage() {
             
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
-                { type: 'estimate', name: 'Estimates', description: 'Quote templates' },
-                { type: 'invoice', name: 'Invoices', description: 'Billing templates' },
-                { type: 'sales_order', name: 'Sales Orders', description: 'Order confirmation templates' },
-                { type: 'purchase_order', name: 'Purchase Orders', description: 'Vendor order templates' }
+                { type: 'estimate' as const, name: 'Estimates', description: 'Quote templates' },
+                { type: 'invoice' as const, name: 'Invoices', description: 'Billing templates' },
+                { type: 'sales_order' as const, name: 'Sales Orders', description: 'Order confirmation templates' },
+                { type: 'purchase_order' as const, name: 'Purchase Orders', description: 'Vendor order templates' }
               ].map(template => (
                 <Card key={template.type} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">
@@ -554,7 +555,10 @@ export default function SettingsPage() {
                   <CardContent className="pt-0">
                     <Button
                       size="sm"
-                      onClick={() => setShowTemplateEditor(true)}
+                      onClick={() => {
+                        setSelectedTemplateType(template.type)
+                        setShowTemplateEditor(true)
+                      }}
                       className="w-full bg-purple-600 hover:bg-purple-700"
                     >
                       <Palette className="w-3 h-3 mr-1" />
@@ -811,7 +815,7 @@ export default function SettingsPage() {
       {showTemplateEditor && (
         <TemplateEditor
           onClose={() => setShowTemplateEditor(false)}
-          templateType="estimate"
+          templateType={selectedTemplateType}
         />
       )}
 

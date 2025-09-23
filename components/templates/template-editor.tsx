@@ -247,6 +247,10 @@ export default function TemplateEditor({ onClose, templateType = 'estimate', cur
     switch (templateType) {
       case 'sales_order':
         return 'so_templates'
+      case 'invoice':
+        return 'invoice_templates'
+      case 'purchase_order':
+        return 'po_templates'
       case 'estimate':
       default:
         return 'estimate_templates'
@@ -283,7 +287,7 @@ export default function TemplateEditor({ onClose, templateType = 'estimate', cur
         name: data.name,
         description: data.description || '',
         isDefault: data.is_default,
-        documentTitleText: templateType.toUpperCase().replace('_', ' '),
+        documentTitleText: templateType.toUpperCase().replace(/_/g, ' '),
         headerBackgroundColor: data.primary_color || '#1e40af',
         primaryColor: data.primary_color || '#1e40af',
         secondaryColor: data.secondary_color || '#64748b',
@@ -1409,8 +1413,8 @@ export default function TemplateEditor({ onClose, templateType = 'estimate', cur
       {/* Header */}
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Template Editor</h1>
-          <p className="text-sm text-gray-600">Customize your document templates</p>
+          <h1 className="text-xl font-semibold">{templateType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} Template Editor</h1>
+          <p className="text-sm text-gray-600">Customize your {templateType.replace(/_/g, ' ').toLowerCase()} templates</p>
         </div>
         
         <div className="flex items-center gap-2">
