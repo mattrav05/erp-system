@@ -19,35 +19,35 @@ export interface CSVValidationResult {
 }
 
 // Validation utility functions
-export function validateRequired(value: any, fieldName: string): ValidationError | null {
+export function validateRequired(value: any, fieldName: string, rowNum?: number): ValidationError | null {
   if (value === null || value === undefined || value === '') {
-    return { type: 'error', message: `${fieldName} is required`, row: 0, column: fieldName }
+    return { type: 'error', message: `${fieldName} is required`, row: rowNum || 0, column: fieldName }
   }
   return null
 }
 
-export function validateDate(value: any, fieldName: string): ValidationError | null {
+export function validateDate(value: any, fieldName: string, rowNum?: number): ValidationError | null {
   if (!value) return null
   const date = new Date(value)
   if (isNaN(date.getTime())) {
-    return { type: 'error', message: `${fieldName} must be a valid date`, row: 0, column: fieldName }
+    return { type: 'error', message: `${fieldName} must be a valid date`, row: rowNum || 0, column: fieldName }
   }
   return null
 }
 
-export function validateNumber(value: any, fieldName: string): ValidationError | null {
+export function validateNumber(value: any, fieldName: string, rowNum?: number): ValidationError | null {
   if (!value) return null
   const num = parseFloat(value)
   if (isNaN(num)) {
-    return { type: 'error', message: `${fieldName} must be a valid number`, row: 0, column: fieldName }
+    return { type: 'error', message: `${fieldName} must be a valid number`, row: rowNum || 0, column: fieldName }
   }
   return null
 }
 
-export function validateChoice(value: any, fieldName: string, choices: string[]): ValidationError | null {
+export function validateChoice(value: any, fieldName: string, choices: string[], rowNum?: number): ValidationError | null {
   if (!value) return null
   if (!choices.includes(value)) {
-    return { type: 'error', message: `${fieldName} must be one of: ${choices.join(', ')}`, row: 0, column: fieldName }
+    return { type: 'error', message: `${fieldName} must be one of: ${choices.join(', ')}`, row: rowNum || 0, column: fieldName }
   }
   return null
 }

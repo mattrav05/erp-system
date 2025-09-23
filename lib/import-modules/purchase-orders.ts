@@ -198,10 +198,8 @@ export class PurchaseOrderImportModule implements ImportModule {
       const rowNum = i + 2; // Account for header row
 
       // Required fields
-      const poNumberError = validateRequired(row.po_number, 'Purchase Order Number');
-      if (poNumberError) {
-        errors.push({ ...poNumberError, row: rowNum });
-      }
+      const poError = validateRequired(row.po_number, 'Purchase Order Number', rowNum);
+      if (poError) errors.push(poError);
 
       // Vendor validation - require either ID or name
       if (!row.vendor_id && !row.vendor_name) {

@@ -229,7 +229,7 @@ export default function CreateEstimateFullscreen({ onSave, onCancel }: CreateEst
   const handleProductSelect = (lineNumber: number, product: Product) => {
     setLineItems(prev => prev.map(item => {
       if (item.line_number === lineNumber) {
-        const salesPrice = product.unit_price || 0
+        const salesPrice = (product as any).unit_price || 0
         return {
           ...item,
           sku: product.sku || '',

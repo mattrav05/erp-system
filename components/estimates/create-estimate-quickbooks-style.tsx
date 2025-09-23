@@ -233,7 +233,7 @@ export default function CreateEstimateQuickBooksStyle({ onSave, onCancel, estima
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       // Fallback to product cost if no inventory found
       const product = products.find(p => p.id === item.product_id)
-      const itemCost = (inventoryItem?.weighted_average_cost || product?.cost || 0) * item.qty
+      const itemCost = (inventoryItem?.weighted_average_cost || (product as any)?.cost || 0) * item.qty
       return sum + itemCost
     }, 0)
     
@@ -510,7 +510,7 @@ export default function CreateEstimateQuickBooksStyle({ onSave, onCancel, estima
         const inventoryItem = inventory.find(inv => inv.product_id === product.id)
         
         // Use sales price from inventory if available, otherwise from product, otherwise 0
-        const salesPrice = inventoryItem?.sales_price || product.unit_price || 0
+        const salesPrice = inventoryItem?.sales_price || (product as any).unit_price || 0
         const defaultQty = item.qty || 1 // Use current qty or default to 1
         
         const lineAmount = defaultQty * salesPrice
@@ -1760,7 +1760,7 @@ Phone: (555) 123-4567"
                       {lineItems.filter(item => item.description.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const costEach = inventoryItem?.weighted_average_cost || (product as any)?.cost || 0
                         const totalItemCost = costEach * item.qty
                         const totalItemRevenue = item.amount
                         const itemProfit = totalItemRevenue - totalItemCost
@@ -1821,7 +1821,7 @@ Phone: (555) 123-4567"
                       {lineItems.filter(item => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const itemCost = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const itemCost = inventoryItem?.weighted_average_cost || (product as any)?.cost || 0
                         return item.description.trim() && itemCost === 0
                       }).length}
                     </span>

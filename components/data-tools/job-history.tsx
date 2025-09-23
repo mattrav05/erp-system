@@ -238,14 +238,14 @@ export default function JobHistory() {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       // Update job status
-      const updatedJobs = jobs.map(j => 
+      const updatedJobs = jobs.map(j =>
         j.id === job.id ? {
           ...j,
           status: 'rolled_back' as const,
           rolledBack: true,
           rolledBackAt: new Date().toISOString(),
           canRollback: false
-        } : j
+        } as Job : j
       )
       setJobs(updatedJobs)
       
