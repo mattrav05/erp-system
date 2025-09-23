@@ -4,17 +4,20 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { getCurrentUser, getCurrentProfile, type Profile } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { connectionHealth } from '@/lib/connection-health'
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
+  connectionHealthy: boolean
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
-  loading: true
+  loading: true,
+  connectionHealthy: true
 })
 
 export function useAuth() {
@@ -25,11 +28,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [connectionHealthy, setConnectionHealthy] = useState(true)
 
   console.log('AuthProvider render - user:', user?.email || 'none', 'loading:', loading)
 
   useEffect(() => {
     let mounted = true
+
+    // Set up connection health monitoring
+    const unsubscribeHealth = connectionHealth.onHealthChange((healthy) => {
+      console.log('🔄 Connection health changed:', healthy)
+      if (mounted) {
+        setConnectionHealthy(healthy)
+
+        // If connection recovered, reload auth state
+        if (healthy && !connectionHealthy) {
+          console.log('🔧 Connection recovered, reloading auth state...')
+          loadAuth()
+        }
+      }
+    })
 
     const loadAuth = async () => {
       console.log('🚀 AuthProvider: Loading initial auth state...')
@@ -179,12 +197,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
+      unsubscribeHealth()
       console.log('🧹 AuthProvider cleanup')
     }
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, connectionHealthy }}>
       {children}
     </AuthContext.Provider>
   )

@@ -3,6 +3,7 @@
 import { useAuth } from '@/components/providers/auth-provider'
 import Header from '@/components/layout/header'
 import LoginForm from '@/components/auth/login-form'
+import { ConnectionStatus } from '@/components/ui/connection-status'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -27,6 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ConnectionStatus />
       <Header />
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {children}

@@ -8,6 +8,7 @@ import { signOut } from '@/lib/auth'
 import { useAuth } from '@/components/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
 import GlobalSearch from '@/components/search/global-search'
+import { ConnectionIndicator } from '@/components/ui/connection-status'
 import { 
   Package, 
   ShoppingCart, 
@@ -139,9 +140,12 @@ export default function Header() {
                   <Settings className="h-4 w-4" />
                 </Button>
               </Link>
-              <span className="text-sm text-gray-700 whitespace-nowrap">
-                {profile?.first_name || user.email?.split('@')[0] || 'User'}
-              </span>
+              <div className="flex items-center space-x-3">
+                <ConnectionIndicator />
+                <span className="text-sm text-gray-700 whitespace-nowrap">
+                  {profile?.first_name || user.email?.split('@')[0] || 'User'}
+                </span>
+              </div>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 text-xs px-3 py-1">
                 Sign Out
               </Button>
