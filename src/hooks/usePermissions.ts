@@ -136,7 +136,11 @@ export function useDataFilters() {
         ])
 
         setFilters({
-          sales: salesFilter,
+          sales: {
+            canViewAll: salesFilter.canViewAll,
+            salesRepFilter: salesFilter.salesRepFilter,
+            territoryFilter: salesFilter.territoryFilter
+          },
           canViewCosts,
           canApplyUnlimitedDiscounts
         })
