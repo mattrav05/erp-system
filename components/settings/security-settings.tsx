@@ -25,9 +25,9 @@ interface User {
   id: string
   email: string
   role: UserRole
-  full_name?: string
+  first_name?: string
+  last_name?: string
   created_at: string
-  last_sign_in_at?: string
 }
 
 interface RolePermission {
@@ -59,7 +59,7 @@ interface SecurityAuditEntry {
   was_allowed: boolean
   denial_reason?: string
   created_at: string
-  profiles?: { full_name?: string; email: string }[] | null
+  profiles?: { first_name?: string; last_name?: string; email: string }[] | null
 }
 
 export default function SecuritySettings() {
@@ -88,7 +88,7 @@ export default function SecuritySettings() {
       // Load users with their profiles
       const { data: usersData } = await supabase
         .from('profiles')
-        .select('id, email, role, full_name, created_at, last_sign_in_at')
+        .select('id, email, role, first_name, last_name, created_at')
         .order('created_at', { ascending: false })
 
       // Load role permissions
@@ -114,7 +114,7 @@ export default function SecuritySettings() {
           was_allowed,
           denial_reason,
           created_at,
-          profiles(full_name, email)
+          profiles(first_name, last_name, email)
         `)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -291,7 +291,7 @@ export default function SecuritySettings() {
                         <th className="text-left p-2">User</th>
                         <th className="text-left p-2">Email</th>
                         <th className="text-left p-2">Role</th>
-                        <th className="text-left p-2">Last Sign In</th>
+                        <th className="text-left p-2">Created</th>
                         <th className="text-left p-2">Actions</th>
                       </tr>
                     </thead>
@@ -300,26 +300,23 @@ export default function SecuritySettings() {
                         <tr key={user.id} className="border-b hover:bg-gray-50">
                           <td className="p-2">
                             <div>
-                              <div className="font-medium">{user.full_name || 'No name'}</div>
+                              <div className="font-medium">{`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'No name'}</div>
                               <div className="text-sm text-gray-500">{user.id.slice(0, 8)}...</div>
                             </div>
                           </td>
                           <td className="p-2">{user.email}</td>
                           <td className="p-2">
                             <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                              {roleDisplayNames[user.role]}
+                              {roleDisplayNames[user.role] || user.role || 'Unknown'}
                             </Badge>
                           </td>
                           <td className="p-2 text-sm text-gray-500">
-                            {user.last_sign_in_at
-                              ? new Date(user.last_sign_in_at).toLocaleDateString()
-                              : 'Never'
-                            }
+                            {new Date(user.created_at).toLocaleDateString()}
                           </td>
                           <td className="p-2">
                             <Select
                               value={user.role}
-                              onValueChange={(newRole: UserRole) => updateUserRole(user.id, newRole)}
+                              onValueChange={(value: string) => updateUserRole(user.id, value as UserRole)}
                               disabled={user.id === currentUser?.id} // Can't change own role
                             >
                               <SelectTrigger className="w-40">
@@ -442,7 +439,7 @@ export default function SecuritySettings() {
                           >
                             <div className="flex-1">
                               <div className="font-medium">
-                                {user?.full_name || user?.email || 'Unknown User'}
+                                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.email || 'Unknown User'}
                               </div>
                               <div className="text-sm text-gray-500">
                                 {categoryDisplayNames[override.category]} •{' '}
@@ -510,7 +507,7 @@ export default function SecuritySettings() {
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="font-medium">
-                              {entry.profiles?.[0]?.full_name || entry.profiles?.[0]?.email || 'Unknown User'}
+                              {`${entry.profiles?.[0]?.first_name || ''} ${entry.profiles?.[0]?.last_name || ''}`.trim() || entry.profiles?.[0]?.email || 'Unknown User'}
                             </div>
                             <div className="text-sm text-gray-600">
                               {entry.action} • {entry.resource_type}
