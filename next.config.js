@@ -9,15 +9,10 @@ const nextConfig = {
   // More aggressive fixes for focus-based reload issues
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    // Disable some client-side reload mechanisms
-    clientRouterFilter: false,
-    // Reduce aggressive build checking
-    isrMemoryCacheSize: 0
   },
 
   // Disable some automatic behaviors that might cause reloads
   reactStrictMode: false,
-  swcMinify: true,
 
   // Temporarily relax ESLint rules for deployment
   eslint: {
