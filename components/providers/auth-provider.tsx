@@ -35,6 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
+    // Set up periodic session refresh to prevent expiration
+    const sessionRefreshInterval = setInterval(async () => {
+      if (user && mounted) {
+        console.log('🔄 Periodic session refresh...')
+        const { error } = await supabase.auth.refreshSession()
+        if (error) {
+          console.error('Session refresh error:', error)
+        } else {
+          console.log('✅ Session refreshed')
+        }
+      }
+    }, 60000) // Refresh every 60 seconds
+
     // Set up connection health monitoring
     const unsubscribeHealth = connectionHealth.onHealthChange((healthy) => {
       console.log('🔄 Connection health changed:', healthy)
@@ -209,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false
       clearTimeout(timeoutId)
+      clearInterval(sessionRefreshInterval)
       subscription.unsubscribe()
       unsubscribeHealth()
       console.log('🧹 AuthProvider cleanup')
