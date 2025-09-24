@@ -34,6 +34,7 @@ import TermsEditor from '@/components/terms/terms-editor'
 import DocumentNumberingSettings from './document-numbering-settings'
 import ModuleSettings from './module-settings'
 import UserManagement from './user-management'
+import ErrorBoundary from '@/components/ui/error-boundary'
 
 type SettingsCategory = 
   | 'sales-reps'
@@ -805,7 +806,9 @@ export default function SettingsPage() {
         <div className="lg:col-span-3">
           <Card>
             <CardContent className="p-0">
-              {renderSettingsContent()}
+              <ErrorBoundary>
+                {renderSettingsContent()}
+              </ErrorBoundary>
             </CardContent>
           </Card>
         </div>

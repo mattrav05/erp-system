@@ -10,6 +10,7 @@ export interface ContextMenuOption {
   onClick: () => void
   disabled?: boolean
   separator?: boolean
+  className?: string
 }
 
 interface ContextMenuProps {
@@ -106,7 +107,7 @@ export default function ContextMenu({ options, children, className }: ContextMen
                   option.disabled
                     ? 'text-gray-400 cursor-not-allowed'
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                } ${option.className || ''}`}
               >
                 {option.icon && (
                   <span className="flex-shrink-0">{option.icon}</span>

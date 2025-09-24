@@ -4,17 +4,21 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { getCurrentUser, getCurrentProfile, type Profile } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { connectionHealth } from '@/lib/connection-health'
+import '@/lib/debug-supabase' // Auto-start debugging in development
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
+  connectionHealthy: boolean
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
-  loading: true
+  loading: true,
+  connectionHealthy: true
 })
 
 export function useAuth() {
@@ -25,16 +29,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [connectionHealthy, setConnectionHealthy] = useState(true)
 
   console.log('AuthProvider render - user:', user?.email || 'none', 'loading:', loading)
 
   useEffect(() => {
     let mounted = true
 
+    // Set up periodic session refresh to prevent expiration
+    const sessionRefreshInterval = setInterval(async () => {
+      if (user && mounted) {
+        console.log('🔄 Periodic session refresh for user:', user.email)
+
+        // Get current session info before refresh
+        const { data: { session: beforeSession } } = await supabase.auth.getSession()
+        console.log('📊 Session before refresh:', {
+          exists: !!beforeSession,
+          expiresAt: beforeSession?.expires_at ? new Date(beforeSession.expires_at * 1000).toLocaleTimeString() : 'N/A',
+          expiresIn: beforeSession?.expires_at ? Math.round((beforeSession.expires_at * 1000 - Date.now()) / 1000) + 's' : 'N/A'
+        })
+
+        const { error, data } = await supabase.auth.refreshSession()
+        if (error) {
+          console.error('❌ Session refresh error:', error)
+
+          // Try to re-authenticate if refresh fails
+          console.log('🔄 Refresh failed, checking user status...')
+          const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
+          console.log('👤 Current user after failed refresh:', {
+            user: currentUser?.email || 'none',
+            error: userError?.message
+          })
+        } else {
+          console.log('✅ Session refreshed successfully')
+          if (data.session) {
+            console.log('📊 New session expires at:', new Date(data.session.expires_at * 1000).toLocaleTimeString())
+          }
+        }
+      }
+    }, 600000) // Refresh every 10 minutes
+
+    // Set up connection health monitoring
+    const unsubscribeHealth = connectionHealth.onHealthChange((healthy) => {
+      console.log('🔄 Connection health changed:', healthy)
+      if (mounted) {
+        setConnectionHealthy(healthy)
+
+        // If connection recovered, reload auth state
+        if (healthy && !connectionHealthy) {
+          console.log('🔧 Connection recovered, checking auth state...')
+          // Don't reload if we already have a user
+          if (!user) {
+            loadAuth()
+          }
+        }
+      }
+    })
+
     const loadAuth = async () => {
       console.log('🚀 AuthProvider: Loading initial auth state...')
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // First try to get the session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+        }
+
+        // If we have a session, use it, otherwise try getUser
+        const { data: { user }, error } = session
+          ? { data: { user: session.user }, error: null }
+          : await supabase.auth.getUser()
         console.log('👤 AuthProvider: Got current user:', user?.email || 'none', 'error:', error?.message || 'none')
 
         if (!mounted) return
@@ -178,13 +243,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false
       clearTimeout(timeoutId)
+      clearInterval(sessionRefreshInterval)
       subscription.unsubscribe()
+      unsubscribeHealth()
       console.log('🧹 AuthProvider cleanup')
     }
   }, [])
 
+  // Log environment info to help debug Vercel-specific issues
+  useEffect(() => {
+    console.log('🌍 ENVIRONMENT INFO:', {
+      isProduction: process.env.NODE_ENV === 'production',
+      isVercel: !!process.env.VERCEL,
+      vercelEnv: process.env.VERCEL_ENV,
+      vercelUrl: process.env.VERCEL_URL,
+      userAgent: navigator?.userAgent?.substring(0, 100)
+    })
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, connectionHealthy }}>
       {children}
     </AuthContext.Provider>
   )

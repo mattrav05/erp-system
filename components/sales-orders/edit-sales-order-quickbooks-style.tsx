@@ -40,7 +40,7 @@ interface Customer {
   is_active: boolean
   created_at: string
   updated_at: string
-  payment_terms?: { name: string } | null
+  payment_terms_details?: { name: string } | null
 }
 type SalesRep = Database['public']['Tables']['sales_reps']['Row']
 type Product = Database['public']['Tables']['products']['Row']
@@ -48,8 +48,8 @@ type SalesOrder = Database['public']['Tables']['sales_orders']['Row'] & {
   customers?: { name: string; email: string | null }
   sales_reps?: { first_name: string; last_name: string; employee_code: string }
 }
-type SOTemplate = Database['public']['Tables']['so_templates']['Row']
-type SalesOrderLine = Database['public']['Tables']['sales_order_lines']['Row']
+type SOTemplate = any
+type SalesOrderLine = any
 
 interface LineItem {
   id: string
@@ -61,6 +61,9 @@ interface LineItem {
   product_id?: string
   unit_of_measure: string
   is_taxable?: boolean  // Simple taxable flag instead of complex tax codes
+  tax_code?: string
+  tax_rate?: number
+  tax_amount?: number
   quantity_reserved?: number
   qty_invoiced?: number  // Quantity already invoiced
   qty_remaining?: number  // Quantity still to be invoiced
@@ -218,11 +221,11 @@ export default function EditSalesOrderQuickBooksStyle({
       }
 
       // Check for related estimate using estimate_id field (fallback to estimate_number)
-      if (salesOrder.estimate_id) {
+      if ((salesOrder as any).estimate_id) {
         const { data: estimate, error: estError } = await supabase
           .from('estimates')
           .select('*')
-          .eq('id', salesOrder.estimate_id)
+          .eq('id', (salesOrder as any).estimate_id)
           .single()
 
         if (!estError && estimate) {
@@ -448,7 +451,7 @@ export default function EditSalesOrderQuickBooksStyle({
     const newTotalCost = lineItems.reduce((sum, item) => {
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       const product = products.find(p => p.id === item.product_id)
-      const itemCost = (inventoryItem?.weighted_average_cost || product?.cost || 0) * item.qty
+      const itemCost = ((inventoryItem as any)?.weighted_average_cost || (product as any)?.cost || 0) * item.qty
       return sum + itemCost
     }, 0)
     
@@ -677,8 +680,8 @@ export default function EditSalesOrderQuickBooksStyle({
     setCustomerDropdown(false)
     
     // Auto-fill payment terms from customer if available
-    if (customerData.payment_terms?.name) {
-      setTerms(customerData.payment_terms.name)
+    if ((customerData.payment_terms as any)?.name) {
+      setTerms((customerData.payment_terms as any).name)
     }
     
     // Set Bill To with customer info
@@ -1117,12 +1120,12 @@ Best regards,
     } catch (error) {
       console.error('Error duplicating sales order:', error)
       console.error('Error type:', typeof error)
-      console.error('Error keys:', Object.keys(error))
-      if (error.message) console.error('Error message:', error.message)
-      if (error.details) console.error('Error details:', error.details)
-      if (error.hint) console.error('Error hint:', error.hint)
-      if (error.code) console.error('Error code:', error.code)
-      alert(`Error duplicating sales order: ${error.message || 'Unknown error'}`)
+      console.error('Error keys:', Object.keys(error as any))
+      if ((error as any).message) console.error('Error message:', (error as any).message)
+      if ((error as any).details) console.error('Error details:', (error as any).details)
+      if ((error as any).hint) console.error('Error hint:', (error as any).hint)
+      if ((error as any).code) console.error('Error code:', (error as any).code)
+      alert(`Error duplicating sales order: ${(error as any).message || 'Unknown error'}`)
     } finally {
       setIsDuplicating(false)
     }
@@ -2049,10 +2052,10 @@ Email: customer@example.com"
         {/* Audit Trail Section */}
         <div className="pt-4 border-t">
           <AuditInfo
-            lastEditedBy={salesOrder.last_edited_by}
-            lastEditedAt={salesOrder.last_edited_at}
-            createdBy={salesOrder.created_by}
-            createdAt={salesOrder.created_at}
+            lastEditedBy={(salesOrder as any).last_edited_by}
+            lastEditedAt={(salesOrder as any).last_edited_at}
+            createdBy={(salesOrder as any).created_by}
+            createdAt={(salesOrder as any).created_at}
             showCreated={true}
             className="flex flex-col gap-1"
           />
@@ -2274,7 +2277,7 @@ Email: customer@example.com"
                       {lineItems.filter(item => item.description.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const costEach = inventoryItem?.weighted_average_cost || (product as any)?.cost || 0
                         const totalItemCost = costEach * item.qty
                         const totalItemRevenue = item.amount
                         const itemProfit = totalItemRevenue - totalItemCost

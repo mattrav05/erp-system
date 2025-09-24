@@ -233,7 +233,7 @@ export default function CreateEstimateQuickBooksStyle({ onSave, onCancel, estima
       const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
       // Fallback to product cost if no inventory found
       const product = products.find(p => p.id === item.product_id)
-      const itemCost = (inventoryItem?.weighted_average_cost || product?.cost || 0) * item.qty
+      const itemCost = (inventoryItem?.weighted_average_cost || (product as any)?.cost || 0) * item.qty
       return sum + itemCost
     }, 0)
     
@@ -476,7 +476,7 @@ export default function CreateEstimateQuickBooksStyle({ onSave, onCancel, estima
       console.error('=== CUSTOMER CREATE ERROR ===')
       console.error('Error:', error)
       
-      let errorMessage = error?.message || 'Unknown error occurred'
+      let errorMessage = (error as any)?.message || 'Unknown error occurred'
       
       // Provide more specific error messages
       if (errorMessage.includes('violates check constraint')) {
@@ -510,7 +510,7 @@ export default function CreateEstimateQuickBooksStyle({ onSave, onCancel, estima
         const inventoryItem = inventory.find(inv => inv.product_id === product.id)
         
         // Use sales price from inventory if available, otherwise from product, otherwise 0
-        const salesPrice = inventoryItem?.sales_price || product.sales_price || 0
+        const salesPrice = inventoryItem?.sales_price || (product as any).unit_price || 0
         const defaultQty = item.qty || 1 // Use current qty or default to 1
         
         const lineAmount = defaultQty * salesPrice
@@ -708,7 +708,7 @@ Best regards,
           const newEstimateNumber = await generateUniqueEstimateNumber()
           
           setEstimateNumber(newEstimateNumber)
-          setEstimateDate(new Date().toISOString().split('T')[0])
+          setDate(new Date().toISOString().split('T')[0])
           setHasUnsavedChanges(true)
           
           alert(`Estimate duplicated with new number: ${newEstimateNumber}. Remember to save this new estimate.`)
@@ -722,7 +722,7 @@ Best regards,
     
     // Update to new number and reset date
     setEstimateNumber(newEstimateNumber)
-    setEstimateDate(new Date().toISOString().split('T')[0])
+    setDate(new Date().toISOString().split('T')[0])
     setHasUnsavedChanges(true)
     
     alert(`Estimate duplicated with new number: ${newEstimateNumber}. Remember to save this new estimate.`)
@@ -943,12 +943,12 @@ Best regards,
     } catch (error) {
       console.error('Error creating estimate:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint
       })
-      alert(`Failed to create estimate: ${error?.message || 'Unknown error'}`)
+      alert(`Failed to create estimate: ${(error as any)?.message || 'Unknown error'}`)
     } finally {
       setIsSaving(false)
     }
@@ -1348,7 +1348,7 @@ Phone: (555) 123-4567"
                   >
                     <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-3 py-2 relative" style={{width: `${columnWidths.item}px`}}>
-                        <div ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div ref={el => { itemDropdownRefs.current[item.id] = el }}>
                           <Input
                             value={item.item}
                           onChange={(e) => handleItemSearch(item.id, e.target.value)}
@@ -1760,7 +1760,7 @@ Phone: (555) 123-4567"
                       {lineItems.filter(item => item.description.trim()).map((item, index) => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const costEach = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const costEach = inventoryItem?.weighted_average_cost || (product as any)?.cost || 0
                         const totalItemCost = costEach * item.qty
                         const totalItemRevenue = item.amount
                         const itemProfit = totalItemRevenue - totalItemCost
@@ -1821,7 +1821,7 @@ Phone: (555) 123-4567"
                       {lineItems.filter(item => {
                         const inventoryItem = inventory.find(inv => inv.product_id === item.product_id)
                         const product = products.find(p => p.id === item.product_id)
-                        const itemCost = inventoryItem?.weighted_average_cost || product?.cost || 0
+                        const itemCost = inventoryItem?.weighted_average_cost || (product as any)?.cost || 0
                         return item.description.trim() && itemCost === 0
                       }).length}
                     </span>

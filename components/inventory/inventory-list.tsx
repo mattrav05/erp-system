@@ -605,8 +605,8 @@ export default function InventoryList() {
 
       // Filter for active PO statuses after fetching
       const activePOLines = (poLines || []).filter(line => 
-        line.purchase_orders && 
-        ['PENDING', 'CONFIRMED', 'PARTIAL'].includes(line.purchase_orders.status)
+        line.purchase_orders &&
+        ['PENDING', 'CONFIRMED', 'PARTIAL'].includes((line.purchase_orders as any).status)
       )
 
       // If no active PO lines, return early
@@ -654,9 +654,9 @@ export default function InventoryList() {
         }
         
         acc[line.product_id].push({
-          po_number: line.purchase_orders?.po_number || 'Unknown',
-          status: line.purchase_orders?.status || 'Unknown',
-          order_date: line.purchase_orders?.order_date || '',
+          po_number: (line.purchase_orders as any)?.po_number || 'Unknown',
+          status: (line.purchase_orders as any)?.status || 'Unknown',
+          order_date: (line.purchase_orders as any)?.order_date || '',
           qty_ordered: qtyOrdered,
           qty_received: qtyReceived,
           qty_pending: qtyPending
@@ -720,9 +720,12 @@ export default function InventoryList() {
           weighted_average_cost: 12.50,
           last_cost: 12.50,
           sales_price: 18.75,
+          margin_percent: 33.3,
+          markup_percent: 50.0,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         },
         {
           id: '2',
@@ -743,9 +746,12 @@ export default function InventoryList() {
           weighted_average_cost: 18.75,
           last_cost: 18.75,
           sales_price: 28.15,
+          margin_percent: 33.4,
+          markup_percent: 50.1,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         },
         {
           id: '3',
@@ -766,9 +772,12 @@ export default function InventoryList() {
           weighted_average_cost: 5.25,
           last_cost: 5.25,
           sales_price: 7.99,
+          margin_percent: 34.3,
+          markup_percent: 52.2,
           location: 'MAIN',
           default_tax_code: 'NON',
-          default_tax_rate: 0
+          default_tax_rate: 0,
+          is_active: true
         },
         {
           id: '4',
@@ -789,9 +798,12 @@ export default function InventoryList() {
           weighted_average_cost: 0,
           last_cost: 0,
           sales_price: 75.00,
+          margin_percent: 100.0,
+          markup_percent: 0,
           location: 'MAIN',
           default_tax_code: 'EXE',
-          default_tax_rate: 0
+          default_tax_rate: 0,
+          is_active: true
         },
         {
           id: '5',
@@ -812,9 +824,12 @@ export default function InventoryList() {
           weighted_average_cost: 45.00,
           last_cost: 45.00,
           sales_price: 67.50,
+          margin_percent: 33.3,
+          markup_percent: 50.0,
           location: 'MAIN',
           default_tax_code: 'TAX',
-          default_tax_rate: 8.5
+          default_tax_rate: 8.5,
+          is_active: true
         }
       ]
       
@@ -965,7 +980,10 @@ export default function InventoryList() {
         weighted_average_cost: newItem.weighted_average_cost,
         last_cost: newItem.weighted_average_cost,
         sales_price: newItem.sales_price,
-        location: 'MAIN'
+        location: 'MAIN',
+        margin_percent: 33.3,
+        markup_percent: 50.0,
+        is_active: true
       }
       
       setInventory(prev => [...prev, fallbackItem])
@@ -1138,8 +1156,8 @@ export default function InventoryList() {
       
       if (typeof idOrItem === 'string') {
         // Fallback to local state deletion for string ID calls
-        setInventory(prev => prev.filter(item => item.id !== id))
-        console.log('Deleted item from local state (database unavailable):', id)
+        setInventory(prev => prev.filter(item => item.id !== idOrItem))
+        console.log('Deleted item from local state (database unavailable):', idOrItem)
       } else {
         alert('Failed to delete item')
       }
@@ -1685,7 +1703,10 @@ export default function InventoryList() {
             default_tax_rate: editingItem.default_tax_rate,
             reorder_point: editingItem.product.reorder_point,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            margin_percent: editingItem.margin_percent || 33.3,
+            markup_percent: editingItem.markup_percent || 50.0,
+            is_active: editingItem.is_active !== undefined ? editingItem.is_active : true
           }}
           isOpen={true}
           onClose={() => {

@@ -2,43 +2,53 @@
 
 ## Supabase CLI Authentication & Database Operations
 
-### Critical Authentication Requirements
-**IMPORTANT**: The Supabase CLI has specific authentication requirements that must be followed exactly:
+### Updated Authentication Status (Sept 23, 2025)
+**IMPORTANT**: Migrated from legacy JWT keys to new API key format
 
-#### 1. CLI Authentication (for project operations)
+#### 1. New API Keys (Updated in .env.local)
+- **Publishable Key**: `sb_publishable_iPBfZvunwyACs4d0lzr3JA_jzyAbdHJ`
+- **Secret Key**: `sb_secret_WhuY5jf2DDI6pxm7UB98FQ_VRIyFfiy`
+
+#### 2. CLI Authentication (for project operations)
 ```bash
-export SUPABASE_ACCESS_TOKEN="sbp_c6ac77ad960c391d02e50a7c8690e4d3bca081f3"
+export SUPABASE_ACCESS_TOKEN="sbp_636708b095bb2802fb1b0b67ff187031cfe1f5a7"
 ```
 
-#### 2. Database Password (for database operations)
-```bash
-export SUPABASE_DB_PASSWORD="pCEOUeoTA0xTtt2Y"
-```
+#### 3. Current Status
+- ✅ Project linked: `tcwzhkeqwymqrljaadew`
+- ✅ CLI authenticated
+- ❌ Network connectivity issues (WSL2/IPv6)
+- ⚠️ Shipping migration pending manual application
 
 #### 3. Project Configuration
 - **Project Reference**: `tcwzhkeqwymqrljaadew`
 - **Project is linked**: Use `--linked` flag for database operations
 
-### Correct Commands for Common Operations
+### Correct Commands for Common Operations (Modern CLI)
 
 #### Create Migration
 ```bash
-SUPABASE_ACCESS_TOKEN="sbp_c6ac77ad960c391d02e50a7c8690e4d3bca081f3" ~/.local/bin/supabase migration new <migration_name>
+supabase migration new <migration_name>
 ```
 
 #### Apply Migrations (Dry Run)
 ```bash
-SUPABASE_ACCESS_TOKEN="sbp_c6ac77ad960c391d02e50a7c8690e4d3bca081f3" SUPABASE_DB_PASSWORD="pCEOUeoTA0xTtt2Y" ~/.local/bin/supabase db push --linked --dry-run
+supabase db push --dry-run
 ```
 
 #### Apply Migrations (Live)
 ```bash
-SUPABASE_ACCESS_TOKEN="sbp_c6ac77ad960c391d02e50a7c8690e4d3bca081f3" SUPABASE_DB_PASSWORD="pCEOUeoTA0xTtt2Y" ~/.local/bin/supabase db push --linked
+supabase db push
 ```
 
 #### List Migrations
 ```bash
-SUPABASE_ACCESS_TOKEN="sbp_c6ac77ad960c391d02e50a7c8690e4d3bca081f3" SUPABASE_DB_PASSWORD="pCEOUeoTA0xTtt2Y" ~/.local/bin/supabase migration list --linked
+supabase migration list
+```
+
+#### Alternative with Environment Variables (if needed)
+```bash
+SUPABASE_ACCESS_TOKEN="sbp_636708b095bb2802fb1b0b67ff187031cfe1f5a7" supabase db push
 ```
 
 ### Common Issues & Solutions

@@ -39,7 +39,7 @@ interface Customer {
   is_active: boolean
   created_at: string
   updated_at: string
-  payment_terms?: { name: string } | null
+  payment_terms_relation?: { name: string } | null
 }
 type SalesRep = Database['public']['Tables']['sales_reps']['Row']
 type EstimateTemplate = Database['public']['Tables']['estimate_templates']['Row']
@@ -61,6 +61,9 @@ interface LineItem {
   product_id?: string
   unit_of_measure: string
   is_taxable?: boolean  // Simple taxable flag instead of complex tax codes
+  tax_code?: string
+  tax_rate?: number
+  tax_amount?: number
 }
 
 interface EditEstimateQuickBooksStyleProps {
@@ -105,7 +108,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
   // Address fields
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
-  const [shipSameAsBill, setShipSameAsBill] = useState(estimate.ship_to_same_as_billing || true)
+  const [shipSameAsBill, setShipSameAsBill] = useState<boolean>(estimate.ship_to_same_as_billing ?? true)
 
   // Line items
   const [lineItems, setLineItems] = useState<LineItem[]>([])
@@ -250,7 +253,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
             const { data: invoice, error: invError } = await supabase
               .from('invoices')
               .select('*')
-              .eq('id', salesOrder.converted_to_invoice_id)
+              .eq('id', (salesOrder as any).converted_to_invoice_id)
               .single()
             if (!invError && invoice) {
               relationships.invoice = {
@@ -307,7 +310,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
         const { data: directInvoice, error: directInvError } = await supabase
           .from('invoices')
           .select('*')
-          .eq('id', estimate.converted_to_invoice_id)
+          .eq('id', (estimate as any).converted_to_invoice_id)
           .single()
 
         if (!directInvError && directInvoice) {
@@ -318,12 +321,12 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
             date: directInvoice.invoice_date,
             amount: directInvoice.total_amount || 0
           }
-        } else if (directInvError && directInvError.code === 'PGRST116') {
+        } else if (directInvError && (directInvError as any).code === 'PGRST116') {
           // Invoice was deleted, clear the reference in the estimate
           console.log('Referenced invoice no longer exists, clearing estimate reference')
           await supabase
             .from('estimates')
-            .update({ converted_to_invoice_id: null })
+            .update({ converted_to_invoice_id: null } as any)
             .eq('id', estimate.id)
         }
       }
@@ -680,7 +683,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
     
     // Check if this could be a new customer
     const existing = customers.find(c => 
-      c.name.toLowerCase() === value.toLowerCase()
+      c.company_name.toLowerCase() === value.toLowerCase()
     )
     
     if (!existing && value.trim()) {
@@ -694,8 +697,8 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
     setCustomerDropdown(false)
     
     // Auto-fill payment terms from customer if available
-    if (customerData.payment_terms?.name) {
-      setTerms(customerData.payment_terms.name)
+    if (customerData.payment_terms_relation?.name) {
+      setTerms(customerData.payment_terms_relation.name)
     }
     
     // Set Bill To with customer info
@@ -802,7 +805,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
       console.error('=== CUSTOMER CREATE ERROR ===')
       console.error('Error:', error)
       
-      let errorMessage = error?.message || 'Unknown error occurred'
+      let errorMessage = (error as any)?.message || 'Unknown error occurred'
       
       // Provide more specific error messages
       if (errorMessage.includes('violates check constraint')) {
@@ -836,7 +839,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
         const inventoryItem = inventory.find(inv => inv.product_id === product.id)
         
         // Use sales price from inventory if available, otherwise from product, otherwise 0
-        const salesPrice = inventoryItem?.sales_price || product.sales_price || 0
+        const salesPrice = inventoryItem?.sales_price || (product as any).unit_price || 0
         const defaultQty = item.qty || 1 // Use current qty or default to 1
         
         // Get tax code from inventory if set
@@ -1099,7 +1102,7 @@ Best regards,
         terms_and_conditions: terms?.trim() || null,
         internal_notes: memo?.trim() || null,
         customer_notes: customerMessage?.trim() || null,
-        discount_percentage: estimate.discount_percentage || 0,
+        discount_percentage: (estimate as any).discount_percentage || 0,
         subtotal: subtotal || 0,
         tax_rate: defaultTaxRate,
         tax_amount: taxAmount || 0,
@@ -1164,12 +1167,12 @@ Best regards,
     } catch (error) {
       console.error('Error duplicating estimate:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint
       })
-      alert(`Failed to duplicate estimate: ${error?.message || 'Unknown error'}`)
+      alert(`Failed to duplicate estimate: ${(error as any)?.message || 'Unknown error'}`)
     }
   }
 
@@ -1544,12 +1547,12 @@ Best regards,
     } catch (error) {
       console.error('Error updating estimate:', error)
       console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: (error as any)?.message,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint
       })
-      alert(`Failed to update estimate: ${error?.message || 'Unknown error'}`)
+      alert(`Failed to update estimate: ${(error as any)?.message || 'Unknown error'}`)
       return false // Return failure
     } finally {
       setIsSaving(false)
@@ -2019,7 +2022,7 @@ Phone: (555) 123-4567"
                   >
                     <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-3 py-2 relative" style={{width: `${columnWidths.item}px`}}>
-                        <div ref={el => itemDropdownRefs.current[item.id] = el}>
+                        <div ref={el => { itemDropdownRefs.current[item.id] = el; }}>
                           <Input
                             value={item.item}
                           onChange={(e) => handleItemSearch(item.id, e.target.value)}
@@ -2159,9 +2162,9 @@ Phone: (555) 123-4567"
           {/* Audit Trail Section */}
           <div className="pt-4 border-t">
             <AuditInfo
-              lastEditedBy={estimate.last_edited_by}
-              lastEditedAt={estimate.last_edited_at}
-              createdBy={estimate.created_by}
+              lastEditedBy={(estimate as any).last_edited_by}
+              lastEditedAt={(estimate as any).last_edited_at}
+              createdBy={(estimate as any).created_by}
               createdAt={estimate.created_at}
               showCreated={true}
               className="flex flex-col gap-1"

@@ -14,9 +14,10 @@ import {
 } from 'lucide-react'
 
 type EstimateTemplate = Database['public']['Tables']['estimate_templates']['Row']
-type SOTemplate = Database['public']['Tables']['so_templates']['Row']
+type SOTemplate = any
 
 interface TemplateEditorProps {
+  isOpen?: boolean
   onClose: () => void
   templateType?: 'estimate' | 'invoice' | 'sales_order' | 'purchase_order'
   currentTemplateId?: string

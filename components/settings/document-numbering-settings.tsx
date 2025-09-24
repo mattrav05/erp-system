@@ -2,20 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { safeQuery } from '@/lib/supabase-query'
+import { useFocusReload } from '@/hooks/use-focus-reload'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Hash, 
-  FileText, 
-  Receipt, 
-  ShoppingCart, 
+import {
+  Hash,
+  FileText,
+  Receipt,
+  ShoppingCart,
   Package,
   AlertTriangle,
   CheckCircle,
   RotateCcw,
-  Save
+  Save,
+  RefreshCw
 } from 'lucide-react'
 
 interface NumberingConfig {
@@ -47,10 +50,17 @@ export default function DocumentNumberingSettings() {
   const [configs, setConfigs] = useState<NumberingConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const [editingConfig, setEditingConfig] = useState<NumberingConfig | null>(null)
   const [newStartNumber, setNewStartNumber] = useState('')
+  const [newPrefix, setNewPrefix] = useState('')
+  const [newFullFormat, setNewFullFormat] = useState('')
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [isValidating, setIsValidating] = useState(false)
+  const [componentReady, setComponentReady] = useState(false)
+
+  // Removed focus reload - was causing auth state issues
 
   const documentTypes = [
     { 
@@ -92,24 +102,103 @@ export default function DocumentNumberingSettings() {
   ]
 
   useEffect(() => {
+    console.log('Document numbering: Component mounted, starting initialization...')
     loadCurrentConfigs()
   }, [])
 
+  // Add timeout handling to prevent infinite loading states
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Document numbering loading timeout - forcing error state')
+          setIsLoading(false)
+          setError('Loading timeout - please refresh the page or try again')
+        }
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isLoading])
+
+  // Component readiness monitoring
+  useEffect(() => {
+    if (!isLoading && !error) {
+      console.log('Document numbering: Component ready')
+      setComponentReady(true)
+    } else {
+      setComponentReady(false)
+    }
+  }, [isLoading, error])
+
+  // Periodic health check to detect if component becomes unresponsive
+  useEffect(() => {
+    const healthCheck = setInterval(() => {
+      if (!componentReady && !isLoading && !error) {
+        console.warn('Document numbering: Component appears to be in invalid state, triggering recovery')
+        loadCurrentConfigs()
+      }
+    }, 5000) // Check every 5 seconds
+
+    return () => clearInterval(healthCheck)
+  }, [componentReady, isLoading, error])
+
   const loadCurrentConfigs = async () => {
+    console.log('Document numbering: Starting to load configs...')
     setIsLoading(true)
+    setError(null)
     try {
       // Get company settings with numbering configuration
-      const { data: companySettings, error } = await supabase
-        .from('company_settings')
-        .select('*')
-        .eq('is_active', true)
-        .single()
+      console.log('Document numbering: Fetching company settings...')
+      const { data: companySettings, error } = await safeQuery(
+        () => supabase
+          .from('company_settings')
+          .select('*')
+          .eq('is_active', true)
+          .single(),
+        'Loading company settings'
+      )
 
-      if (error) throw error
+      // Add detailed error logging
+      if (error) {
+        console.error('🚨 Company settings query failed:', {
+          error: error,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+
+        // Also check current auth state when query fails
+        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+        console.error('🚨 Auth state during failure:', {
+          hasSession: !!session,
+          sessionExpired: session ? session.expires_at * 1000 < Date.now() : 'no session',
+          hasUser: !!user,
+          userError: userError?.message,
+          timestamp: new Date().toLocaleTimeString()
+        })
+      }
+
+      if (error) {
+        console.log('Document numbering: Database error:', error)
+        // If no settings found, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('No company settings found, creating defaults...')
+          await createDefaultCompanySettings()
+          return // Will reload after creation
+        }
+        throw error
+      }
 
       if (!companySettings) {
+        console.log('Document numbering: No settings data returned')
         throw new Error('No active company settings found')
       }
+
+      console.log('Document numbering: Settings loaded successfully', companySettings)
 
       const loadedConfigs: NumberingConfig[] = [
         {
@@ -138,75 +227,144 @@ export default function DocumentNumberingSettings() {
         }
       ]
 
+      console.log('Document numbering: Configs processed:', loadedConfigs)
       setConfigs(loadedConfigs)
-    } catch (error) {
-      console.error('Error loading numbering configs:', error)
-      alert('Failed to load numbering settings. Please try again.')
+      setRetryCount(0) // Reset retry count on success
+    } catch (error: any) {
+      console.error('Document numbering: Error loading configs:', error)
+
+      // After 3 retry attempts, use fallback mode instead of staying in error state
+      if (retryCount >= 2) {
+        console.log('Document numbering: Max retries reached, switching to fallback mode')
+        setFallbackMode()
+        return
+      }
+
+      setError(error.message || 'Failed to load numbering settings')
     } finally {
+      console.log('Document numbering: Loading complete')
       setIsLoading(false)
     }
   }
 
-  const validateNewNumber = async (docType: string, startNumber: number): Promise<ValidationResult> => {
+  const createDefaultCompanySettings = async () => {
+    try {
+      console.log('Document numbering: Creating default company settings...')
+      const defaultSettings = {
+        company_name: 'Your Company',
+        estimate_prefix: 'EST',
+        estimate_next_number: 1,
+        invoice_prefix: 'INV',
+        invoice_next_number: 1,
+        sales_order_prefix: 'SO',
+        sales_order_next_number: 1,
+        purchase_order_prefix: 'PO',
+        purchase_order_next_number: 1,
+        is_active: true
+      }
+
+      const { error } = await supabase
+        .from('company_settings')
+        .insert(defaultSettings)
+
+      if (error) throw error
+
+      console.log('Document numbering: Created default company settings')
+      // Reload configs after creating defaults
+      await loadCurrentConfigs()
+    } catch (error) {
+      console.error('Document numbering: Error creating default settings:', error)
+      // If we can't create defaults, use client-side fallback
+      setFallbackMode()
+    }
+  }
+
+  const setFallbackMode = () => {
+    console.log('Document numbering: Entering fallback mode with local defaults')
+    const fallbackConfigs: NumberingConfig[] = [
+      {
+        document_type: 'estimate',
+        current_number: 0,
+        prefix: 'EST',
+        format: 'EST-######'
+      },
+      {
+        document_type: 'invoice',
+        current_number: 0,
+        prefix: 'INV',
+        format: 'INV-######'
+      },
+      {
+        document_type: 'sales_order',
+        current_number: 0,
+        prefix: 'SO',
+        format: 'SO-######'
+      },
+      {
+        document_type: 'purchase_order',
+        current_number: 0,
+        prefix: 'PO',
+        format: 'PO-######'
+      }
+    ]
+
+    setConfigs(fallbackConfigs)
+    setIsLoading(false)
+    setError('Database unavailable - using local defaults. Some features may be limited.')
+  }
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1)
+    loadCurrentConfigs()
+  }
+
+  const validateNewFormat = async (docType: string, fullFormat: string): Promise<ValidationResult> => {
     const docTypeInfo = documentTypes.find(dt => dt.type === docType)
     if (!docTypeInfo) {
       return { isValid: false, message: 'Invalid document type' }
     }
 
+    // Validate format contains placeholders for numbers
+    if (!fullFormat.includes('#') && !fullFormat.match(/\d/)) {
+      return { isValid: false, message: 'Format must contain either # placeholders or numbers' }
+    }
+
     try {
-      // Check if the proposed starting number conflicts with existing documents
-      const proposedFormat = `${docTypeInfo.prefix}-${String(startNumber).padStart(6, '0')}`
-      
-      const { data: existingDoc, error } = await supabase
+      // Get the highest existing number to suggest next available
+      const { data: allDocs, error: allError } = await supabase
         .from(docTypeInfo.tableName)
         .select(docTypeInfo.numberColumn)
-        .eq(docTypeInfo.numberColumn, proposedFormat)
-        .single()
+        .order(docTypeInfo.numberColumn, { ascending: false })
+        .limit(5)
 
-      if (error && error.code !== 'PGRST116') {
-        throw error
-      }
+      if (allError) throw allError
 
-      if (existingDoc) {
-        // Number exists, find the next available number
-        const { data: allDocs, error: allError } = await supabase
-          .from(docTypeInfo.tableName)
-          .select(docTypeInfo.numberColumn)
-          .gte(docTypeInfo.numberColumn, proposedFormat)
-          .order(docTypeInfo.numberColumn, { ascending: true })
+      let highestNumber = 0
+      const existingNumbers: string[] = []
 
-        if (allError) throw allError
-
-        let suggestedNumber = startNumber
-        const conflictingNumbers: string[] = []
-
-        if (allDocs) {
-          for (const doc of allDocs) {
-            const docNumber = doc[docTypeInfo.numberColumn]
-            if (docNumber) {
-              conflictingNumbers.push(docNumber)
-              const match = docNumber.match(/(\d+)$/)
-              if (match) {
-                const existingNum = parseInt(match[1])
-                if (existingNum >= suggestedNumber) {
-                  suggestedNumber = existingNum + 1
-                }
+      if (allDocs) {
+        for (const doc of allDocs) {
+          const docNumber = (doc as any)[docTypeInfo.numberColumn]
+          if (docNumber) {
+            existingNumbers.push(docNumber)
+            // Extract number from any format (EST-000123, INV123, SO-2024-001, etc.)
+            const match = docNumber.match(/(\d+)(?!.*\d)/) // Last number in string
+            if (match) {
+              const num = parseInt(match[1])
+              if (num > highestNumber) {
+                highestNumber = num
               }
             }
           }
         }
-
-        return {
-          isValid: false,
-          suggestedNumber,
-          conflictingNumbers: conflictingNumbers.slice(0, 5), // Show first 5 conflicts
-          message: `Number ${proposedFormat} already exists. Suggested starting number: ${suggestedNumber}`
-        }
       }
+
+      const suggestedStartNumber = highestNumber + 1
 
       return {
         isValid: true,
-        message: `Number ${proposedFormat} is available and can be used as starting point`
+        suggestedNumber: suggestedStartNumber,
+        message: `Format will be applied. Current highest number found: ${highestNumber}. Suggested next: ${suggestedStartNumber}`
       }
     } catch (error) {
       console.error('Error validating number:', error)
@@ -217,47 +375,59 @@ export default function DocumentNumberingSettings() {
   const handleStartEdit = (config: NumberingConfig) => {
     setEditingConfig(config)
     setNewStartNumber(String(config.current_number + 1))
+    setNewPrefix(config.prefix)
+    setNewFullFormat(config.format || `${config.prefix}-######`)
     setValidationResult(null)
   }
 
-  const handleValidateNumber = async () => {
-    if (!editingConfig || !newStartNumber) return
+  const handleValidateFormat = async () => {
+    if (!editingConfig || !newFullFormat) return
 
     setIsValidating(true)
-    const startNum = parseInt(newStartNumber)
-    if (isNaN(startNum) || startNum < 1) {
-      setValidationResult({
-        isValid: false,
-        message: 'Please enter a valid number greater than 0'
-      })
-      setIsValidating(false)
-      return
-    }
 
-    const result = await validateNewNumber(editingConfig.document_type, startNum)
+    const result = await validateNewFormat(editingConfig.document_type, newFullFormat)
     setValidationResult(result)
     setIsValidating(false)
   }
 
-  const handleApplyNewNumber = async () => {
+  const generateSampleFormat = (format: string, number: number = 1): string => {
+    // Replace # placeholders with padded numbers
+    let result = format
+    const hashCount = (format.match(/#/g) || []).length
+    if (hashCount > 0) {
+      const paddedNumber = String(number).padStart(hashCount, '0')
+      result = format.replace(/#+/, paddedNumber)
+    }
+    return result
+  }
+
+  const handleApplyNewFormat = async () => {
     if (!editingConfig || !validationResult?.isValid) return
 
     setIsSaving(true)
     try {
-      // Use the database function to reset numbering
-      const { error } = await supabase.rpc('reset_document_numbering', {
-        doc_type: editingConfig.document_type,
-        new_start_number: parseInt(newStartNumber)
-      })
+      // Update company settings with new format and starting number
+      const startNum = validationResult.suggestedNumber || parseInt(newStartNumber) || 1
+
+      const updateData: any = {}
+      updateData[`${editingConfig.document_type}_prefix`] = newPrefix
+      updateData[`${editingConfig.document_type}_next_number`] = startNum
+
+      const { error } = await supabase
+        .from('company_settings')
+        .update(updateData)
+        .eq('is_active', true)
 
       if (error) throw error
 
       // Refresh the configs to show the updated numbers
       await loadCurrentConfigs()
 
-      alert(`Successfully set next ${editingConfig.document_type} number to start from ${newStartNumber}`)
+      alert(`Successfully updated ${editingConfig.document_type} numbering format and starting number`)
       setEditingConfig(null)
       setNewStartNumber('')
+      setNewPrefix('')
+      setNewFullFormat('')
       setValidationResult(null)
     } catch (error: any) {
       console.error('Error applying new number:', error)
@@ -278,7 +448,7 @@ export default function DocumentNumberingSettings() {
           let suggestedNumber = currentNum + 1
           if (conflictData && conflictData.length > 0) {
             const lastDoc = conflictData[0]
-            const lastNumber = lastDoc[documentTypes.find(dt => dt.type === editingConfig.document_type)!.numberColumn]
+            const lastNumber = (lastDoc as any)[documentTypes.find(dt => dt.type === editingConfig.document_type)!.numberColumn]
             const match = lastNumber.match(/(\d+)$/)
             if (match) {
               suggestedNumber = parseInt(match[1]) + 1
@@ -308,7 +478,7 @@ export default function DocumentNumberingSettings() {
 
   const formatCurrentNumber = (config: NumberingConfig) => {
     const nextNumber = config.current_number + 1
-    return `${config.prefix}-${String(nextNumber).padStart(6, '0')}`
+    return generateSampleFormat(config.format || `${config.prefix}-######`, nextNumber)
   }
 
   if (isLoading) {
@@ -326,14 +496,73 @@ export default function DocumentNumberingSettings() {
     )
   }
 
+  if (error && !configs.length) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Document Numbering</h3>
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">{error}</p>
+          <div className="space-x-2 flex flex-wrap justify-center gap-2">
+            {retryCount < 2 && (
+              <Button onClick={handleRetry} className="bg-blue-600 hover:bg-blue-700">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry {retryCount > 0 && `(${retryCount + 1}/3)`}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null)
+                createDefaultCompanySettings()
+              }}
+            >
+              Create Default Settings
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null)
+                setFallbackMode()
+              }}
+              className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+              Use Offline Mode
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Numbering</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-xl font-semibold text-gray-900">Document Numbering</h2>
+          {error && configs.length > 0 && (
+            <Badge className="bg-orange-100 text-orange-800">
+              Limited Mode
+            </Badge>
+          )}
+          {componentReady && !error && (
+            <Badge className="bg-green-100 text-green-800">
+              Connected
+            </Badge>
+          )}
+        </div>
         <p className="text-gray-600">
           Configure starting numbers for your business documents. The system will intelligently handle conflicts and continue sequentially.
         </p>
+        {error && configs.length > 0 && (
+          <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-sm text-orange-800">
+              <AlertTriangle className="w-4 h-4 inline mr-1" />
+              {error} Some features may not work correctly.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Document Types */}
@@ -376,15 +605,32 @@ export default function DocumentNumberingSettings() {
                       className="flex items-center gap-2"
                     >
                       <RotateCcw className="w-4 h-4" />
-                      Reset Numbering
+                      Edit Numbering
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          New Starting Number
+                          Document Format
+                        </label>
+                        <Input
+                          value={newFullFormat}
+                          onChange={(e) => {
+                            setNewFullFormat(e.target.value)
+                            setValidationResult(null)
+                          }}
+                          placeholder="e.g., EST-######, INV-2024-###"
+                          className="font-mono"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Use # for number placeholders (e.g., ###### = 000001)
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Starting Number
                         </label>
                         <Input
                           type="number"
@@ -398,16 +644,27 @@ export default function DocumentNumberingSettings() {
                           className="font-mono"
                         />
                       </div>
-                      <div className="pt-6">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleValidateNumber}
-                          disabled={isValidating || !newStartNumber}
-                        >
-                          {isValidating ? 'Checking...' : 'Validate'}
-                        </Button>
+                    </div>
+
+                    {/* Format Preview */}
+                    {newFullFormat && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-sm text-blue-800">
+                          <span className="font-medium">Preview:</span> {generateSampleFormat(newFullFormat, parseInt(newStartNumber) || 1)}
+                        </div>
                       </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleValidateFormat}
+                        disabled={isValidating || !newFullFormat}
+                        className="flex items-center gap-2"
+                      >
+                        {isValidating ? 'Checking...' : 'Validate Format'}
+                      </Button>
                     </div>
 
                     {/* Validation Result */}
@@ -464,7 +721,7 @@ export default function DocumentNumberingSettings() {
                     <div className="flex items-center gap-2 pt-2">
                       <Button
                         size="sm"
-                        onClick={handleApplyNewNumber}
+                        onClick={handleApplyNewFormat}
                         disabled={!validationResult?.isValid || isSaving}
                         className="bg-green-600 hover:bg-green-700"
                       >
@@ -477,6 +734,8 @@ export default function DocumentNumberingSettings() {
                         onClick={() => {
                           setEditingConfig(null)
                           setNewStartNumber('')
+                          setNewPrefix('')
+                          setNewFullFormat('')
                           setValidationResult(null)
                         }}
                       >

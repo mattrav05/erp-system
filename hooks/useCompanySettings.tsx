@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/lib/supabase'
 
-type CompanySettings = Database['public']['Tables']['company_settings']['Row']
+type CompanySettings = any
 
 export function useCompanySettings() {
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null)

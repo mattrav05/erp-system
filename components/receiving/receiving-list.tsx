@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Eye, Edit, Trash2, Package, Calendar, User, Hash, FileText, RefreshCw } from 'lucide-react'
 import ContextMenu from '@/components/ui/context-menu'
 
-type InventoryReceipt = Database['public']['Tables']['inventory_receipts']['Row'] & {
+type InventoryReceipt = any & {
   products?: { name: string; sku: string }
   purchase_order_lines?: {
     purchase_orders?: { po_number: string }

@@ -62,9 +62,11 @@ interface ExportJob {
   completedAt?: string
 }
 
+type Job = ImportJob | ExportJob
+
 export default function JobHistory() {
-  const [jobs, setJobs] = useState<(ImportJob | ExportJob)[]>([])
-  const [filteredJobs, setFilteredJobs] = useState<(ImportJob | ExportJob)[]>([])
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -236,14 +238,14 @@ export default function JobHistory() {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       // Update job status
-      const updatedJobs = jobs.map(j => 
+      const updatedJobs = jobs.map(j =>
         j.id === job.id ? {
           ...j,
           status: 'rolled_back' as const,
           rolledBack: true,
           rolledBackAt: new Date().toISOString(),
           canRollback: false
-        } : j
+        } as Job : j
       )
       setJobs(updatedJobs)
       

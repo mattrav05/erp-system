@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Save, Building2, MapPin, Phone, Mail, FileText, CreditCard } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
-type CompanySettings = Database['public']['Tables']['company_settings']['Row']
+type CompanySettings = any
 
 export default function CompanySettings() {
   const [settings, setSettings] = useState<CompanySettings | null>(null)

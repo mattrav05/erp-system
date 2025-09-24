@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button'
 import { signOut } from '@/lib/auth'
 import { useAuth } from '@/components/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
+import { safeQuery } from '@/lib/supabase-query'
 import GlobalSearch from '@/components/search/global-search'
+import { ConnectionIndicator } from '@/components/ui/connection-status'
 import { 
   Package, 
   ShoppingCart, 
@@ -37,18 +39,27 @@ export default function Header() {
     loadEnabledModules()
   }, [])
 
+  // Removed focus reload - was causing auth state issues
+
   const loadEnabledModules = async () => {
     try {
-      const { data, error } = await supabase
-        .from('company_settings')
-        .select('enabled_modules')
-        .single()
+      const { data, error } = await safeQuery(
+        () => supabase
+          .from('company_settings')
+          .select('enabled_modules')
+          .single(),
+        'Loading enabled modules'
+      )
 
       if (data?.enabled_modules) {
         setEnabledModules(data.enabled_modules as string[])
+      } else if (!error) {
+        // No modules configured, use default empty array
+        setEnabledModules([])
       }
     } catch (error) {
-      // Fallback to empty array if no settings found
+      console.error('Failed to load enabled modules:', error)
+      // Fallback to empty array if error
       setEnabledModules([])
     }
   }
@@ -139,9 +150,12 @@ export default function Header() {
                   <Settings className="h-4 w-4" />
                 </Button>
               </Link>
-              <span className="text-sm text-gray-700 whitespace-nowrap">
-                {profile?.first_name || user.email?.split('@')[0] || 'User'}
-              </span>
+              <div className="flex items-center space-x-3">
+                <ConnectionIndicator />
+                <span className="text-sm text-gray-700 whitespace-nowrap">
+                  {profile?.first_name || user.email?.split('@')[0] || 'User'}
+                </span>
+              </div>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 text-xs px-3 py-1">
                 Sign Out
               </Button>

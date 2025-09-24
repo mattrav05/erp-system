@@ -8,16 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Package, CheckCircle, AlertTriangle, Truck, Calendar, Hash, Save, Search, Building2, DollarSign, Clock } from 'lucide-react'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string }
   purchase_order_lines?: PurchaseOrderLine[]
 }
 
-type PurchaseOrderLine = Database['public']['Tables']['purchase_order_lines']['Row'] & {
+type PurchaseOrderLine = any & {
   products?: { name: string; sku: string }
 }
 
-type InventoryReceipt = Database['public']['Tables']['inventory_receipts']['Row'] & {
+type InventoryReceipt = any & {
   products?: { name: string; sku: string }
   purchase_order_lines?: {
     purchase_orders?: { po_number: string }
@@ -415,7 +415,7 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
     )
     
     // Search in line item SKUs and product names
-    const lineItemMatch = po.purchase_order_lines?.some(line => 
+    const lineItemMatch = po.purchase_order_lines?.some((line: any) =>
       line.products?.sku?.toLowerCase().includes(query) ||
       line.products?.name?.toLowerCase().includes(query)
     )
@@ -530,11 +530,11 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
                       
                       // Check if this PO was matched by SKU/product search
                       const query = searchQuery.toLowerCase()
-                      const matchedBySKU = searchQuery && po.purchase_order_lines?.some(line => 
+                      const matchedBySKU = searchQuery && po.purchase_order_lines?.some((line: any) =>
                         line.products?.sku?.toLowerCase().includes(query) ||
                         line.products?.name?.toLowerCase().includes(query)
                       )
-                      const matchedProducts = searchQuery ? po.purchase_order_lines?.filter(line => 
+                      const matchedProducts = searchQuery ? po.purchase_order_lines?.filter((line: any) =>
                         line.products?.sku?.toLowerCase().includes(query) ||
                         line.products?.name?.toLowerCase().includes(query)
                       ) : []
@@ -608,7 +608,7 @@ export default function CreateReceiving({ receipt, preSelectedPO, onBack, onSucc
                                   Contains searched items:
                                 </div>
                                 <div className="space-y-1">
-                                  {matchedProducts.slice(0, 3).map((line, idx) => (
+                                  {matchedProducts.slice(0, 3).map((line: any, idx: number) => (
                                     <div key={idx} className="text-green-700">
                                       <span className="font-medium">{line.products?.sku}</span>
                                       {line.products?.name && (

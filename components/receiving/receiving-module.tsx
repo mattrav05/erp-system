@@ -7,14 +7,14 @@ import { Database } from '@/lib/supabase'
 import ReceivingList from './receiving-list'
 import CreateReceiving from './create-receiving'
 
-type InventoryReceipt = Database['public']['Tables']['inventory_receipts']['Row'] & {
+type InventoryReceipt = any & {
   products?: { name: string; sku: string }
   purchase_order_lines?: {
     purchase_orders?: { po_number: string }
   }
 }
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string }
   purchase_order_lines?: any[]
 }

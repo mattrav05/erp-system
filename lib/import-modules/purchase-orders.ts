@@ -1,6 +1,6 @@
 import { ImportModule, ImportResult, ValidationError, ImportPreview, FieldMapping, ImportJobData } from '../import-service';
 import { supabase } from '../supabase';
-import { validateRequired, validateEmail, validateDate, validateNumber, validateChoice } from '../csv-utils';
+import { validateRequired, validateDate, validateNumber, validateChoice } from '../csv-utils';
 
 interface PurchaseOrderImportData {
   // Purchase Order Header
@@ -198,16 +198,17 @@ export class PurchaseOrderImportModule implements ImportModule {
       const rowNum = i + 2; // Account for header row
 
       // Required fields
-      errors.push(...validateRequired(row.po_number, 'Purchase Order Number', rowNum));
+      const poError = validateRequired(row.po_number, 'Purchase Order Number', rowNum);
+      if (poError) errors.push(poError);
 
       // Vendor validation - require either ID or name
       if (!row.vendor_id && !row.vendor_name) {
-        errors.push({ row: rowNum, field: 'vendor_id/vendor_name', message: 'Either Vendor ID or Vendor Name is required' });
+        errors.push({ row: rowNum, field: 'vendor_id/vendor_name', message: 'Either Vendor ID or Vendor Name is required', severity: 'error' });
       } else {
         // Validate vendor exists
         const vendorKey = row.vendor_id || row.vendor_name?.toLowerCase() || '';
         if (!vendorCache.has(vendorKey)) {
-          errors.push({ row: rowNum, field: 'vendor', message: `Vendor '${row.vendor_id || row.vendor_name}' not found` });
+          errors.push({ row: rowNum, field: 'vendor', message: `Vendor '${row.vendor_id || row.vendor_name}' not found`, severity: 'error' });
         }
       }
 
@@ -215,7 +216,7 @@ export class PurchaseOrderImportModule implements ImportModule {
       if (row.sales_rep_id || row.sales_rep_name) {
         const salesRepKey = row.sales_rep_id || row.sales_rep_name?.toLowerCase() || '';
         if (!salesRepCache.has(salesRepKey)) {
-          errors.push({ row: rowNum, field: 'sales_rep', message: `Sales rep '${row.sales_rep_id || row.sales_rep_name}' not found` });
+          errors.push({ row: rowNum, field: 'sales_rep', message: `Sales rep '${row.sales_rep_id || row.sales_rep_name}' not found`, severity: 'error' });
         }
       }
 

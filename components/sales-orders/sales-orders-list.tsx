@@ -33,7 +33,7 @@ interface SalesOrdersListProps {
   onCreateSalesOrder: () => void
   onEditSalesOrder: (salesOrder: SalesOrder) => void
   salesOrders: SalesOrder[]
-  setSalesOrders: (salesOrders: SalesOrder[]) => void
+  setSalesOrders: any
 }
 
 export default function SalesOrdersList({ 
@@ -125,7 +125,7 @@ export default function SalesOrdersList({
           so.sales_reps?.first_name?.toLowerCase().includes(lowerSearchTerm) ||
           so.sales_reps?.last_name?.toLowerCase().includes(lowerSearchTerm) ||
           so.sales_reps?.employee_code?.toLowerCase().includes(lowerSearchTerm) ||
-          so.memo?.toLowerCase().includes(lowerSearchTerm)
+          (so as any).memo?.toLowerCase().includes(lowerSearchTerm)
         
         // Search in amounts (supports various formats: 8024, 8,024, 8024.00, etc.)
         const amountMatch = 
@@ -140,8 +140,8 @@ export default function SalesOrdersList({
           line.description?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.name?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.sku?.toLowerCase().includes(lowerSearchTerm) ||
-          matchesAmount(line.amount, searchTerm) ||
-          matchesAmount(line.unit_price, searchTerm)
+          matchesAmount((line as any).amount, searchTerm) ||
+          matchesAmount((line as any).unit_price, searchTerm)
         )
         
         return basicMatch || amountMatch || lineItemMatch
@@ -274,7 +274,7 @@ export default function SalesOrdersList({
 
       if (error) throw error
 
-      setSalesOrders(prev => [newSalesOrder, ...prev])
+      setSalesOrders((prev: any) => [newSalesOrder, ...prev] as any)
       
       // Also copy line items if they exist
       const { data: lines } = await supabase
@@ -315,7 +315,7 @@ export default function SalesOrdersList({
       console.log('Attempting to delete sales order:', salesOrder.id, salesOrder.so_number)
       
       // First, clear any estimate references to this sales order
-      if (salesOrder.estimate_id) {
+      if ((salesOrder as any).estimate_id) {
         const { error: estError } = await supabase
           .from('estimates')
           .update({ converted_to_sales_order_id: null })
@@ -328,7 +328,7 @@ export default function SalesOrdersList({
       }
 
       // Clear any purchase order references to this sales order
-      if (salesOrder.converted_to_purchase_order_id) {
+      if ((salesOrder as any).converted_to_purchase_order_id) {
         const { error: poError } = await supabase
           .from('purchase_orders')
           .update({ source_sales_order_id: null })
@@ -377,7 +377,7 @@ export default function SalesOrdersList({
       if (verifyError && verifyError.code === 'PGRST116') {
         // Record not found - deletion was successful
         console.log('Deletion verified - record no longer exists in database')
-        setSalesOrders(prev => prev.filter(so => so.id !== salesOrder.id))
+        setSalesOrders((prev: any) => prev.filter((so: any) => so.id !== salesOrder.id) as any)
         console.log('Sales order deleted successfully from database and local state')
       } else if (verifyData) {
         // Record still exists - deletion failed
@@ -389,7 +389,7 @@ export default function SalesOrdersList({
     } catch (error) {
       console.error('Error deleting sales order:', error)
       console.error('Error details:', JSON.stringify(error, null, 2))
-      alert(`Error deleting sales order: ${error.message || 'Unknown error'}`)
+      alert(`Error deleting sales order: ${(error as any).message || 'Unknown error'}`)
     }
   }
 

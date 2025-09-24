@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Eye, Edit, Mail, Copy, Trash2, ShoppingCart, Truck, Package, RefreshCw } from 'lucide-react'
 import ContextMenu from '@/components/ui/context-menu'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string; contact_name: string | null }
   purchase_order_lines?: {
     item_code: string | null
@@ -30,7 +30,7 @@ interface PurchaseOrdersListProps {
   onCreatePurchaseOrder: () => void
   onEditPurchaseOrder: (purchaseOrder: PurchaseOrder) => void
   purchaseOrders: PurchaseOrder[]
-  setPurchaseOrders: (purchaseOrders: PurchaseOrder[]) => void
+  setPurchaseOrders: any
 }
 
 export default function PurchaseOrdersList({ 
@@ -127,7 +127,7 @@ export default function PurchaseOrdersList({
           matchesAmount(po.tax_amount, searchTerm)
         
         // Search in line items
-        const lineItemMatch = po.purchase_order_lines?.some(line => 
+        const lineItemMatch = po.purchase_order_lines?.some((line: any) =>
           line.item_code?.toLowerCase().includes(lowerSearchTerm) ||
           line.description?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.name?.toLowerCase().includes(lowerSearchTerm) ||
@@ -256,7 +256,7 @@ export default function PurchaseOrdersList({
 
       if (error) throw error
 
-      setPurchaseOrders(prev => [newPurchaseOrder, ...prev])
+      setPurchaseOrders((prev: any) => [newPurchaseOrder, ...prev] as any)
       
       // Also copy line items if they exist
       const { data: lines } = await supabase
@@ -348,7 +348,7 @@ export default function PurchaseOrdersList({
       if (verifyError && verifyError.code === 'PGRST116') {
         // Record not found - deletion was successful
         console.log('Deletion verified - record no longer exists in database')
-        setPurchaseOrders(prev => prev.filter(po => po.id !== purchaseOrder.id))
+        setPurchaseOrders((prev: any) => prev.filter((po: any) => po.id !== purchaseOrder.id) as any)
         console.log('Purchase order deleted successfully from database and local state')
       } else if (verifyData) {
         // Record still exists - deletion failed
@@ -360,7 +360,7 @@ export default function PurchaseOrdersList({
     } catch (error) {
       console.error('Error deleting purchase order:', error)
       console.error('Error details:', JSON.stringify(error, null, 2))
-      alert(`Error deleting purchase order: ${error.message || 'Unknown error'}`)
+      alert(`Error deleting purchase order: ${(error as any).message || 'Unknown error'}`)
     }
   }
 

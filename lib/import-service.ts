@@ -14,9 +14,10 @@ import { EstimateImportModule } from './import-modules/estimates'
 
 // Type definitions for import modules
 export interface ValidationError {
-  row: number;
-  field: string;
+  row?: number;
+  field?: string;
   message: string;
+  severity?: 'error' | 'warning';
 }
 
 export interface FieldMapping {
@@ -42,6 +43,7 @@ export interface ImportResult {
 
 export interface ImportJobData {
   jobId: string;
+  duplicateStrategy?: 'skip' | 'update' | 'create_new';
   onProgress?: (progress: number, message: string) => Promise<void>;
 }
 

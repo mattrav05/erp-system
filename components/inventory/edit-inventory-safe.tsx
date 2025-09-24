@@ -317,11 +317,11 @@ export default function EditInventorySafe({
               <div className="space-y-2">
                 <Label>Current Stock Status</Label>
                 <div className="p-2 rounded border">
-                  {reorderPoint && form.data.quantity_available <= reorderPoint ? (
+                  {reorderPoint && (form.data.quantity_available || 0) <= reorderPoint ? (
                     <span className="text-orange-600 font-medium text-sm">
-                      ⚠️ Below reorder point ({form.data.quantity_available} ≤ {reorderPoint})
+                      ⚠️ Below reorder point ({form.data.quantity_available || 0} ≤ {reorderPoint})
                     </span>
-                  ) : form.data.quantity_available <= 0 ? (
+                  ) : (form.data.quantity_available || 0) <= 0 ? (
                     <span className="text-red-600 font-medium text-sm">
                       🚨 Out of stock
                     </span>

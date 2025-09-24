@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { X, Package, CheckCircle, AlertTriangle, Truck, Calendar, Hash, Search, Building2, DollarSign, Clock } from 'lucide-react'
 
-type PurchaseOrder = Database['public']['Tables']['purchase_orders']['Row'] & {
+type PurchaseOrder = any & {
   vendors?: { company_name: string }
   purchase_order_lines?: PurchaseOrderLine[]
 }
 
-type PurchaseOrderLine = Database['public']['Tables']['purchase_order_lines']['Row'] & {
+type PurchaseOrderLine = any & {
   products?: { name: string; sku: string }
 }
 
@@ -380,11 +380,11 @@ export default function ReceiveInventoryModal({
 
         // Track PO totals for status update
         console.log(`Looking for PO for line ${line.po_line_id}`)
-        const po = purchaseOrders.find(p => p.purchase_order_lines?.some(l => l.id === line.po_line_id))
+        const po = purchaseOrders.find(p => p.purchase_order_lines?.some((l: any) => l.id === line.po_line_id))
         if (po) {
           console.log(`Found PO ${po.id} for line ${line.po_line_id}`)
           if (!poUpdates.has(po.id)) {
-            const totalOrdered = po.purchase_order_lines?.reduce((sum, l) => sum + (l.quantity || 0), 0) || 0
+            const totalOrdered = po.purchase_order_lines?.reduce((sum: number, l: any) => sum + (l.quantity || 0), 0) || 0
             poUpdates.set(po.id, { total: totalOrdered, received: 0 })
             console.log(`Initialized PO ${po.id} totals:`, { total: totalOrdered, received: 0 })
           }

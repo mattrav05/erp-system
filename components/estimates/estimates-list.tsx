@@ -123,13 +123,13 @@ export default function EstimatesList() {
           estimate.sales_reps?.last_name?.toLowerCase().includes(lowerSearchTerm) ||
           estimate.sales_reps?.employee_code?.toLowerCase().includes(lowerSearchTerm) ||
           estimate.estimate_templates?.name?.toLowerCase().includes(lowerSearchTerm) ||
-          estimate.memo?.toLowerCase().includes(lowerSearchTerm)
+          (estimate as any).memo?.toLowerCase().includes(lowerSearchTerm)
         
         // Search in amounts (supports various formats: 8024, 8,024, 8024.00, etc.)
         const amountMatch = 
-          matchesAmount(estimate.total, searchTerm) ||
+          matchesAmount((estimate as any).total, searchTerm) ||
           matchesAmount(estimate.subtotal, searchTerm) ||
-          matchesAmount(estimate.tax_total, searchTerm) ||
+          matchesAmount((estimate as any).tax_total, searchTerm) ||
           matchesAmount(estimate.discount_amount, searchTerm)
         
         // Search in line items
@@ -138,8 +138,8 @@ export default function EstimatesList() {
           line.description?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.name?.toLowerCase().includes(lowerSearchTerm) ||
           line.products?.sku?.toLowerCase().includes(lowerSearchTerm) ||
-          matchesAmount(line.amount, searchTerm) ||
-          matchesAmount(line.unit_price, searchTerm)
+          matchesAmount((line as any).amount, searchTerm) ||
+          matchesAmount((line as any).unit_price, searchTerm)
         )
         
         return basicMatch || amountMatch || lineItemMatch
