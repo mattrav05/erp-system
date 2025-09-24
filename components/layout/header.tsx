@@ -40,11 +40,7 @@ export default function Header() {
     loadEnabledModules()
   }, [])
 
-  // Reload modules when window regains focus
-  useFocusReload(() => {
-    console.log('🔄 Reloading enabled modules after focus')
-    loadEnabledModules()
-  })
+  // Removed focus reload - was causing auth state issues
 
   const loadEnabledModules = async () => {
     try {

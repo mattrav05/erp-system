@@ -43,8 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If connection recovered, reload auth state
         if (healthy && !connectionHealthy) {
-          console.log('🔧 Connection recovered, reloading auth state...')
-          loadAuth()
+          console.log('🔧 Connection recovered, checking auth state...')
+          // Don't reload if we already have a user
+          if (!user) {
+            loadAuth()
+          }
         }
       }
     })

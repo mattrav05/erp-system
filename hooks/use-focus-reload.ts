@@ -15,9 +15,10 @@ export function useFocusReload(reloadFn: () => void, deps: any[] = []) {
       const now = Date.now()
       const timeSinceLastFocus = now - lastFocusTime.current
 
-      // If more than 30 seconds since last focus, reload data
-      if (timeSinceLastFocus > 30000 && !isReloading.current) {
-        console.log('🔄 Window regained focus after idle, reloading data...')
+      // DISABLED: This was causing auth state to reset and break components
+      // Only reload if explicitly requested via a longer timeout
+      if (timeSinceLastFocus > 300000 && !isReloading.current) { // 5 minutes instead of 30 seconds
+        console.log('🔄 Window regained focus after extended idle (5+ minutes), reloading data...')
         isReloading.current = true
 
         // Small delay to ensure the page is fully focused

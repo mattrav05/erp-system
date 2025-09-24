@@ -60,13 +60,7 @@ export default function DocumentNumberingSettings() {
   const [isValidating, setIsValidating] = useState(false)
   const [componentReady, setComponentReady] = useState(false)
 
-  // Add focus reload to handle tab switching
-  useFocusReload(() => {
-    if (!isLoading) {
-      console.log('🔄 Reloading configs after focus regained')
-      loadCurrentConfigs()
-    }
-  }, [isLoading])
+  // Removed focus reload - was causing auth state issues
 
   const documentTypes = [
     { 
