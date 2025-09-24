@@ -354,7 +354,7 @@ export default function SecuritySettings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <Select value={selectedRole} onValueChange={(value: string) => setSelectedRole(value as UserRole)}>
                     <SelectTrigger className="w-64">
                       <SelectValue placeholder="Select a role to view permissions" />
                     </SelectTrigger>
