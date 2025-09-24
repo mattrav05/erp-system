@@ -14,6 +14,27 @@ export function FocusReloadPreventer() {
 
     console.log('🛡️ Initializing focus reload prevention...')
 
+    // Block h1-check.js error from causing reloads
+    const originalAddEventListener = window.addEventListener
+    window.addEventListener = function(type: string, listener: any, options?: any) {
+      // Block specific problematic events that trigger reloads
+      if (type === 'error' || type === 'unhandledrejection') {
+        const wrappedListener = function(event: any) {
+          // Check if error is from h1-check.js or similar
+          if (event?.message?.includes('detectStore') ||
+              event?.reason?.message?.includes('detectStore')) {
+            console.log('🛡️ Blocked h1-check.js error from triggering reload')
+            event.preventDefault?.()
+            event.stopPropagation?.()
+            return false
+          }
+          return listener.call(this, event)
+        }
+        return originalAddEventListener.call(this, type, wrappedListener, options)
+      }
+      return originalAddEventListener.call(this, type, listener, options)
+    }
+
     let isInitialLoad = true
     let lastFocusTime = Date.now()
 
@@ -60,16 +81,22 @@ export function FocusReloadPreventer() {
 
     // Override any router.reload or window.location.reload calls during focus changes
     const originalReload = window.location.reload.bind(window.location)
-    const nextData = (window as unknown as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown> | undefined
-    const originalRouterReload = (nextData?.router as Record<string, unknown> | undefined)?.reload
 
-    window.location.reload = function(): void {
-      const timeSinceFocus = Date.now() - lastFocusTime
-      if (timeSinceFocus < 2000) {
-        console.log('🛡️ Blocked window.location.reload during focus change')
-        return
-      }
-      originalReload()
+    // Use defineProperty to override reload in a way that works in strict mode
+    try {
+      Object.defineProperty(window.location, 'reload', {
+        configurable: true,
+        value: function(): void {
+          const timeSinceFocus = Date.now() - lastFocusTime
+          if (timeSinceFocus < 2000) {
+            console.log('🛡️ Blocked window.location.reload during focus change')
+            return
+          }
+          originalReload()
+        }
+      })
+    } catch (e) {
+      console.warn('Could not override window.location.reload:', e)
     }
 
     // Listen for all focus-related events
@@ -79,9 +106,13 @@ export function FocusReloadPreventer() {
 
     return () => {
       // Restore original functions
-      window.location.reload = originalReload
-      if (originalRouterReload && nextData?.router) {
-        (nextData.router as Record<string, unknown>).reload = originalRouterReload
+      try {
+        Object.defineProperty(window.location, 'reload', {
+          configurable: true,
+          value: originalReload
+        })
+      } catch (e) {
+        // Ignore cleanup errors
       }
 
       // Remove listeners
