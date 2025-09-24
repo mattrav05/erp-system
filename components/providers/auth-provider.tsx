@@ -250,6 +250,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Add visibility change handler to detect and recover from Supabase client corruption
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && user) {
+        // When tab becomes visible and we have a user, test if Supabase client is working
+        try {
+          const testQuery = supabase.from('profiles').select('count', { count: 'exact', head: true })
+          const result = await testQuery
+          // If we get here without error, client is working
+        } catch (error) {
+          console.error('🚨 Supabase client corrupted on tab focus, forcing reload:', error)
+          // Force page reload to restore working state
+          window.location.reload()
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
   return (
     <AuthContext.Provider value={{ user, profile, loading, connectionHealthy }}>
       {children}
