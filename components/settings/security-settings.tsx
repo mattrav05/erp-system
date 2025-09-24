@@ -59,7 +59,7 @@ interface SecurityAuditEntry {
   was_allowed: boolean
   denial_reason?: string
   created_at: string
-  profiles?: { full_name?: string; email: string } | null
+  profiles?: { full_name?: string; email: string }[] | null
 }
 
 export default function SecuritySettings() {
@@ -122,7 +122,7 @@ export default function SecuritySettings() {
       setUsers(usersData || [])
       setRolePermissions(rolePermissionsData || [])
       setUserOverrides(overridesData || [])
-      setAuditLog((auditData as SecurityAuditEntry[]) || [])
+      setAuditLog(auditData || [])
     } catch (error) {
       console.error('Error loading security data:', error)
     } finally {
@@ -510,7 +510,7 @@ export default function SecuritySettings() {
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="font-medium">
-                              {entry.profiles?.full_name || entry.profiles?.email || 'Unknown User'}
+                              {entry.profiles?.[0]?.full_name || entry.profiles?.[0]?.email || 'Unknown User'}
                             </div>
                             <div className="text-sm text-gray-600">
                               {entry.action} • {entry.resource_type}
