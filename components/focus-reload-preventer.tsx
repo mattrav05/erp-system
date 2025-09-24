@@ -60,7 +60,8 @@ export function FocusReloadPreventer() {
 
     // Override any router.reload or window.location.reload calls during focus changes
     const originalReload = window.location.reload
-    const originalRouterReload = (window as unknown as Record<string, unknown>).__NEXT_DATA__?.router?.reload
+    const nextData = (window as unknown as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown> | undefined
+    const originalRouterReload = (nextData?.router as Record<string, unknown> | undefined)?.reload
 
     window.location.reload = function(...args: unknown[]) {
       const timeSinceFocus = Date.now() - lastFocusTime
