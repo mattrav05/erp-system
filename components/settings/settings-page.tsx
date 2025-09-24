@@ -29,6 +29,7 @@ import {
 import SalesRepsManagement from './sales-reps-settings'
 import TaxCodesManagement from './tax-codes-settings'
 import CompanySettings from './company-settings'
+import EnhancedCompanySettings from './enhanced-company-settings'
 import TemplateEditor from '@/components/templates/template-editor'
 import TermsEditor from '@/components/terms/terms-editor'
 import DocumentNumberingSettings from './document-numbering-settings'
@@ -692,13 +693,7 @@ export default function SettingsPage() {
         return <UserManagement />
       
       case 'company':
-        return (
-          <div className="p-6 text-center">
-            <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Company Profile</h3>
-            <p className="text-gray-600">Coming soon - Configure company information</p>
-          </div>
-        )
+        return <EnhancedCompanySettings />
       
       case 'integrations':
         return (

@@ -69,9 +69,33 @@ SUPABASE_ACCESS_TOKEN="sbp_636708b095bb2802fb1b0b67ff187031cfe1f5a7" supabase db
 - **Solution**: Use `WHERE NOT EXISTS` instead of `ON CONFLICT` for conditional inserts
 
 ### Alternative: Direct SQL Execution
-If CLI continues to fail, use the Supabase SQL Editor:
+**CONFIRMED WORKING METHOD**: CLI has persistent IPv6 connectivity issues in WSL2, use Supabase SQL Editor:
 1. Go to: https://supabase.com/dashboard/project/tcwzhkeqwymqrljaadew/sql/new
-2. Execute SQL directly in the browser interface
+2. Copy SQL from migration files in `supabase/migrations/` directory
+3. Execute SQL directly in the browser interface
+4. **VERIFIED**: This method has been used successfully for ALL previous migrations including estimates, sales orders, etc.
+
+**CLI Success After Update**:
+- **Updated CLI to v2.45.5 (Sept 24, 2025)**: IPv6 connectivity issue RESOLVED! 🎉
+- `supabase link --project-ref tcwzhkeqwymqrljaadew` - SUCCESS
+- `supabase migration repair` - SUCCESS
+- `supabase db push --linked` - SUCCESS ("Remote database is up to date")
+
+**Previous Failed Attempts**:
+- Old CLI v2.40.7: IPv6 network unreachable
+- Windows CMD and PowerShell approaches (supabase command not found)
+- PowerShell + npx approach: DNS resolution issues
+
+**ROOT CAUSE IDENTIFIED**:
+- Supabase database host `db.tcwzhkeqwymqrljaadew.supabase.co` resolves to IPv6-only: `2600:1f16:1cd0:331c:4d06:2998:8c9c:3b38`
+- No IPv4 A record available (`ping -4` fails with "Address family not supported")
+- WSL2 lacks proper IPv6 connectivity to reach Supabase's IPv6-only database hosts
+- This is a WSL2/IPv6 architectural limitation, not a network configuration issue
+
+**Current Pending Migration**: `20250924173240_enhanced_company_profile.sql`
+- Location: `supabase/migrations/20250924173240_enhanced_company_profile.sql`
+- Creates enhanced_company_settings table with 60+ comprehensive business fields
+- Includes data migration function to preserve existing company_settings data
 
 ### Service Role Key (Read-Only Operations)
 For diagnostics and verification, use the service role key with the JavaScript client:
@@ -132,5 +156,25 @@ npx next lint
 2. Add Sales Orders to navigation
 3. Create edit/create SO components (similar to estimates)
 
+### Enhanced Company Profile System Implementation
+**Status**: Code complete, UI ready, migration pending database application
+
+**Components Created**:
+- ✅ Enhanced company profile schema with 60+ comprehensive business fields
+- ✅ Enhanced company settings UI with 6 organized tabs (Basic, Addresses, Contact, Financial, Branding, Advanced)
+- ✅ Enhanced useCompanySettings hook with backward compatibility
+- ✅ Settings page integration complete
+
+**Key Features**:
+- Complete business information management (legal names, tax IDs, multiple addresses, branding, etc.)
+- Smart fallback to legacy company_settings table for compatibility
+- Professional tabbed interface with form validation
+- Additional helper methods for address formatting and contact info
+
+**To Complete**:
+1. Apply migration via Supabase Studio SQL editor (`supabase/migrations/20250924173240_enhanced_company_profile.sql`)
+2. Test enhanced company profile functionality
+3. All existing modules will automatically benefit from richer company data
+
 ---
-*Last Updated: 2025-08-15 - Sales Order system schema and UI foundation complete*
+*Last Updated: 2025-09-24 - Enhanced Company Profile system complete, pending database migration*
