@@ -122,7 +122,7 @@ export default function SecuritySettings() {
       setUsers(usersData || [])
       setRolePermissions(rolePermissionsData || [])
       setUserOverrides(overridesData || [])
-      setAuditLog(auditData || [])
+      setAuditLog((auditData as SecurityAuditEntry[]) || [])
     } catch (error) {
       console.error('Error loading security data:', error)
     } finally {
