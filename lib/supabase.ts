@@ -3,29 +3,31 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    storageKey: 'sb-tcwzhkeqwymqrljaadew-auth-token'
-  },
-  global: {
-    headers: {
-      'x-application-name': 'erp-system'
-    }
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  },
-  db: {
-    schema: 'public'
+// Create a stable Supabase client instance that won't be affected by React re-renders
+let _supabaseInstance: any = null
+
+function createStableSupabaseClient() {
+  if (!_supabaseInstance) {
+    _supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false, // Disable URL detection which can cause issues
+        flowType: 'implicit', // Use simpler flow
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'sb-erp-auth'
+      },
+      global: {
+        headers: {
+          'x-application-name': 'erp-system'
+        }
+      }
+    })
   }
-})
+  return _supabaseInstance
+}
+
+export const supabase = createStableSupabaseClient()
 
 // Types for our database tables
 export interface Database {

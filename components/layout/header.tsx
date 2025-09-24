@@ -8,7 +8,6 @@ import { signOut } from '@/lib/auth'
 import { useAuth } from '@/components/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
 import { safeQuery } from '@/lib/supabase-query'
-import { useFocusReload } from '@/hooks/use-focus-reload'
 import GlobalSearch from '@/components/search/global-search'
 import { ConnectionIndicator } from '@/components/ui/connection-status'
 import { 
