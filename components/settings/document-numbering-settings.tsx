@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { safeQuery } from '@/lib/supabase-query'
+import { useFocusReload } from '@/hooks/use-focus-reload'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +59,14 @@ export default function DocumentNumberingSettings() {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [isValidating, setIsValidating] = useState(false)
   const [componentReady, setComponentReady] = useState(false)
+
+  // Add focus reload to handle tab switching
+  useFocusReload(() => {
+    if (!isLoading) {
+      console.log('🔄 Reloading configs after focus regained')
+      loadCurrentConfigs()
+    }
+  }, [isLoading])
 
   const documentTypes = [
     { 
@@ -146,11 +156,14 @@ export default function DocumentNumberingSettings() {
     try {
       // Get company settings with numbering configuration
       console.log('Document numbering: Fetching company settings...')
-      const { data: companySettings, error } = await supabase
-        .from('company_settings')
-        .select('*')
-        .eq('is_active', true)
-        .single()
+      const { data: companySettings, error } = await safeQuery(
+        () => supabase
+          .from('company_settings')
+          .select('*')
+          .eq('is_active', true)
+          .single(),
+        'Loading company settings'
+      )
 
       if (error) {
         console.log('Document numbering: Database error:', error)

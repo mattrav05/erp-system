@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { signOut } from '@/lib/auth'
 import { useAuth } from '@/components/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
+import { safeQuery } from '@/lib/supabase-query'
+import { useFocusReload } from '@/hooks/use-focus-reload'
 import GlobalSearch from '@/components/search/global-search'
 import { ConnectionIndicator } from '@/components/ui/connection-status'
 import { 
@@ -38,18 +40,31 @@ export default function Header() {
     loadEnabledModules()
   }, [])
 
+  // Reload modules when window regains focus
+  useFocusReload(() => {
+    console.log('🔄 Reloading enabled modules after focus')
+    loadEnabledModules()
+  })
+
   const loadEnabledModules = async () => {
     try {
-      const { data, error } = await supabase
-        .from('company_settings')
-        .select('enabled_modules')
-        .single()
+      const { data, error } = await safeQuery(
+        () => supabase
+          .from('company_settings')
+          .select('enabled_modules')
+          .single(),
+        'Loading enabled modules'
+      )
 
       if (data?.enabled_modules) {
         setEnabledModules(data.enabled_modules as string[])
+      } else if (!error) {
+        // No modules configured, use default empty array
+        setEnabledModules([])
       }
     } catch (error) {
-      // Fallback to empty array if no settings found
+      console.error('Failed to load enabled modules:', error)
+      // Fallback to empty array if error
       setEnabledModules([])
     }
   }
