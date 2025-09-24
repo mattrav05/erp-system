@@ -52,7 +52,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadAuth = async () => {
       console.log('🚀 AuthProvider: Loading initial auth state...')
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // First try to get the session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+        }
+
+        // If we have a session, use it, otherwise try getUser
+        const { data: { user }, error } = session
+          ? { data: { user: session.user }, error: null }
+          : await supabase.auth.getUser()
         console.log('👤 AuthProvider: Got current user:', user?.email || 'none', 'error:', error?.message || 'none')
 
         if (!mounted) return

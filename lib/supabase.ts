@@ -3,17 +3,76 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+// Custom fetch with retry logic and better error handling
+const customFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  const options = init || {}
+  const maxRetries = 2
+  let lastError: any = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
+      const response = await fetch(input, {
+        ...options,
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      // If successful or final attempt, return response
+      if (response.ok || attempt === maxRetries) {
+        return response
+      }
+
+      // Check if it's a server error worth retrying
+      if (response.status >= 500 || response.status === 0) {
+        console.log(`🔄 Server error, retrying request (attempt ${attempt + 1}/${maxRetries + 1})`)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        continue
+      }
+
+      return response
+    } catch (error: any) {
+      lastError = error
+
+      // Don't retry if it's the last attempt
+      if (attempt === maxRetries) {
+        console.error('Request failed after all retries:', error)
+        throw error
+      }
+
+      // Check if it's a timeout or network error
+      if (error.name === 'AbortError' || error.message?.includes('network') || error.message?.includes('fetch')) {
+        console.log(`🔄 Network error, retrying (attempt ${attempt + 1}/${maxRetries + 1})`)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  throw lastError || new Error('Request failed after retries')
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'erp-auth-token'
   },
   global: {
     headers: {
       'x-application-name': 'erp-system'
-    }
+    },
+    fetch: typeof window !== 'undefined' ? customFetch : fetch
   },
   realtime: {
     params: {
