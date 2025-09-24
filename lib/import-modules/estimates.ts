@@ -210,7 +210,8 @@ export class EstimateImportModule implements ImportModule {
       const rowNum = i + 2; // Account for header row
 
       // Required fields
-      errors.push(...validateRequired(row.estimate_number, 'Estimate Number', rowNum));
+      const error = validateRequired(row.estimate_number, 'Estimate Number', rowNum);
+      if (error) errors.push(error);
 
       // Customer validation - require either ID or name
       if (!row.customer_id && !row.customer_name) {
@@ -241,36 +242,45 @@ export class EstimateImportModule implements ImportModule {
 
       // Date validations
       if (row.estimate_date) {
-        errors.push(...validateDate(row.estimate_date, 'Estimate Date', rowNum));
+        const error = validateDate(row.estimate_date, 'Estimate Date', rowNum);
+          if (error) errors.push(error);
       }
       if (row.expiration_date) {
-        errors.push(...validateDate(row.expiration_date, 'Expiration Date', rowNum));
+        const error = validateDate(row.expiration_date, 'Expiration Date', rowNum);
+          if (error) errors.push(error);
       }
 
       // Financial validations
       if (row.subtotal) {
-        errors.push(...validateNumber(row.subtotal, 'Subtotal', rowNum));
+        const error = validateNumber(row.subtotal, 'Subtotal', rowNum);
+          if (error) errors.push(error);
       }
       if (row.tax_rate) {
-        errors.push(...validateNumber(row.tax_rate, 'Tax Rate', rowNum));
+        const error = validateNumber(row.tax_rate, 'Tax Rate', rowNum);
+          if (error) errors.push(error);
       }
       if (row.tax_amount) {
-        errors.push(...validateNumber(row.tax_amount, 'Tax Amount', rowNum));
+        const error = validateNumber(row.tax_amount, 'Tax Amount', rowNum);
+          if (error) errors.push(error);
       }
       if (row.shipping_amount) {
-        errors.push(...validateNumber(row.shipping_amount, 'Shipping Amount', rowNum));
+        const error = validateNumber(row.shipping_amount, 'Shipping Amount', rowNum);
+          if (error) errors.push(error);
       }
       if (row.discount_amount) {
-        errors.push(...validateNumber(row.discount_amount, 'Discount Amount', rowNum));
+        const error = validateNumber(row.discount_amount, 'Discount Amount', rowNum);
+          if (error) errors.push(error);
       }
       if (row.total_amount) {
-        errors.push(...validateNumber(row.total_amount, 'Total Amount', rowNum));
+        const error = validateNumber(row.total_amount, 'Total Amount', rowNum);
+          if (error) errors.push(error);
       }
 
       // Status validation
       if (row.status) {
-        errors.push(...validateChoice(row.status, 'Status', 
-          ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'], rowNum));
+        const error = validateChoice(row.status, 'Status',
+          ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'], rowNum);
+          if (error) errors.push(error);
       }
 
       // Boolean validation
@@ -286,7 +296,8 @@ export class EstimateImportModule implements ImportModule {
       if (hasLineData) {
         // Line number validation
         if (row.line_number) {
-          errors.push(...validateNumber(row.line_number, 'Line Number', rowNum));
+          const error = validateNumber(row.line_number, 'Line Number', rowNum);
+          if (error) errors.push(error);
         }
 
         // Description is required for estimate lines
@@ -304,15 +315,17 @@ export class EstimateImportModule implements ImportModule {
 
         // Item type validation
         if (row.item_type) {
-          errors.push(...validateChoice(row.item_type, 'Item Type', 
-            ['PRODUCT', 'SERVICE', 'LABOR', 'MATERIAL', 'MISC'], rowNum));
+          const error = validateChoice(row.item_type, 'Item Type',
+            ['PRODUCT', 'SERVICE', 'LABOR', 'MATERIAL', 'MISC'], rowNum);
+          if (error) errors.push(error);
         }
 
         // Quantity validation (required for line items)
         if (!row.quantity) {
           errors.push({ row: rowNum, field: 'quantity', message: 'Quantity is required for line items' });
         } else {
-          errors.push(...validateNumber(row.quantity, 'Quantity', rowNum));
+          const error = validateNumber(row.quantity, 'Quantity', rowNum);
+          if (error) errors.push(error);
           if (parseFloat(row.quantity) <= 0) {
             errors.push({ row: rowNum, field: 'quantity', message: 'Quantity must be greater than 0' });
           }
@@ -322,25 +335,31 @@ export class EstimateImportModule implements ImportModule {
         if (!row.unit_price) {
           errors.push({ row: rowNum, field: 'unit_price', message: 'Unit Price is required for line items' });
         } else {
-          errors.push(...validateNumber(row.unit_price, 'Unit Price', rowNum));
+          const error = validateNumber(row.unit_price, 'Unit Price', rowNum);
+          if (error) errors.push(error);
         }
 
         // Optional line field validations
         if (row.line_total) {
-          errors.push(...validateNumber(row.line_total, 'Line Total', rowNum));
+          const error = validateNumber(row.line_total, 'Line Total', rowNum);
+          if (error) errors.push(error);
         }
         if (row.discount_type) {
-          errors.push(...validateChoice(row.discount_type, 'Discount Type', 
-            ['NONE', 'PERCENT', 'AMOUNT'], rowNum));
+          const error = validateChoice(row.discount_type, 'Discount Type',
+            ['NONE', 'PERCENT', 'AMOUNT'], rowNum);
+          if (error) errors.push(error);
         }
         if (row.discount_value) {
-          errors.push(...validateNumber(row.discount_value, 'Discount Value', rowNum));
+          const error = validateNumber(row.discount_value, 'Discount Value', rowNum);
+          if (error) errors.push(error);
         }
         if (row.discounted_total) {
-          errors.push(...validateNumber(row.discounted_total, 'Discounted Total', rowNum));
+          const error = validateNumber(row.discounted_total, 'Discounted Total', rowNum);
+          if (error) errors.push(error);
         }
         if (row.sort_order) {
-          errors.push(...validateNumber(row.sort_order, 'Sort Order', rowNum));
+          const error = validateNumber(row.sort_order, 'Sort Order', rowNum);
+          if (error) errors.push(error);
         }
 
         // Boolean validation for taxable
