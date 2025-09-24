@@ -159,6 +159,29 @@ export default function DocumentNumberingSettings() {
         'Loading company settings'
       )
 
+      // Add detailed error logging
+      if (error) {
+        console.error('🚨 Company settings query failed:', {
+          error: error,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+
+        // Also check current auth state when query fails
+        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+        console.error('🚨 Auth state during failure:', {
+          hasSession: !!session,
+          sessionExpired: session ? session.expires_at * 1000 < Date.now() : 'no session',
+          hasUser: !!user,
+          userError: userError?.message,
+          timestamp: new Date().toLocaleTimeString()
+        })
+      }
+
       if (error) {
         console.log('Document numbering: Database error:', error)
         // If no settings found, create default ones

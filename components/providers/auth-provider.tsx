@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js'
 import { getCurrentUser, getCurrentProfile, type Profile } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { connectionHealth } from '@/lib/connection-health'
+import '@/lib/debug-supabase' // Auto-start debugging in development
 
 interface AuthContextType {
   user: User | null
@@ -38,15 +39,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up periodic session refresh to prevent expiration
     const sessionRefreshInterval = setInterval(async () => {
       if (user && mounted) {
-        console.log('🔄 Periodic session refresh...')
-        const { error } = await supabase.auth.refreshSession()
+        console.log('🔄 Periodic session refresh for user:', user.email)
+
+        // Get current session info before refresh
+        const { data: { session: beforeSession } } = await supabase.auth.getSession()
+        console.log('📊 Session before refresh:', {
+          exists: !!beforeSession,
+          expiresAt: beforeSession?.expires_at ? new Date(beforeSession.expires_at * 1000).toLocaleTimeString() : 'N/A',
+          expiresIn: beforeSession?.expires_at ? Math.round((beforeSession.expires_at * 1000 - Date.now()) / 1000) + 's' : 'N/A'
+        })
+
+        const { error, data } = await supabase.auth.refreshSession()
         if (error) {
-          console.error('Session refresh error:', error)
+          console.error('❌ Session refresh error:', error)
+
+          // Try to re-authenticate if refresh fails
+          console.log('🔄 Refresh failed, checking user status...')
+          const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
+          console.log('👤 Current user after failed refresh:', {
+            user: currentUser?.email || 'none',
+            error: userError?.message
+          })
         } else {
-          console.log('✅ Session refreshed')
+          console.log('✅ Session refreshed successfully')
+          if (data.session) {
+            console.log('📊 New session expires at:', new Date(data.session.expires_at * 1000).toLocaleTimeString())
+          }
         }
       }
-    }, 60000) // Refresh every 60 seconds
+    }, 30000) // Refresh every 30 seconds for debugging
 
     // Set up connection health monitoring
     const unsubscribeHealth = connectionHealth.onHealthChange((healthy) => {
