@@ -250,25 +250,98 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Add visibility change handler to detect and recover from Supabase client corruption
+  // Add comprehensive debugging for Supabase client corruption
   useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && user) {
-        // When tab becomes visible and we have a user, test if Supabase client is working
+    let debugInterval: NodeJS.Timeout
+
+    const logSupabaseState = () => {
+      try {
+        console.log('🔍 DEBUGGING SUPABASE CLIENT STATE:', {
+          timestamp: new Date().toLocaleTimeString(),
+          supabaseExists: !!supabase,
+          supabaseType: typeof supabase,
+          supabaseConstructor: supabase?.constructor?.name,
+          authExists: !!supabase?.auth,
+          authType: typeof supabase?.auth,
+          hasGetUser: typeof supabase?.auth?.getUser === 'function',
+          hasGetSession: typeof supabase?.auth?.getSession === 'function',
+          hasOnAuthStateChange: typeof supabase?.auth?.onAuthStateChange === 'function',
+          fromExists: !!supabase?.from,
+          fromType: typeof supabase?.from,
+          userState: user?.email || 'none',
+          documentHidden: document.hidden,
+          windowFocused: document.hasFocus(),
+        })
+
+        // Test if we can create a query builder
         try {
-          const testQuery = supabase.from('profiles').select('count', { count: 'exact', head: true })
-          const result = await testQuery
-          // If we get here without error, client is working
-        } catch (error) {
-          console.error('🚨 Supabase client corrupted on tab focus, forcing reload:', error)
-          // Force page reload to restore working state
-          window.location.reload()
+          const testQueryBuilder = supabase.from('profiles')
+          console.log('✅ Query builder created successfully:', !!testQueryBuilder)
+        } catch (queryError) {
+          console.error('❌ Failed to create query builder:', queryError)
         }
+
+        // Test auth methods
+        try {
+          console.log('🔐 Testing auth.getUser...')
+          supabase.auth.getUser().then((result) => {
+            console.log('✅ auth.getUser success:', {
+              hasData: !!result.data,
+              hasUser: !!result.data.user,
+              email: result.data.user?.email,
+              error: result.error?.message
+            })
+          }).catch((authError) => {
+            console.error('❌ auth.getUser failed:', authError)
+          })
+        } catch (authError) {
+          console.error('❌ auth.getUser threw sync error:', authError)
+        }
+
+      } catch (error) {
+        console.error('💥 CRITICAL: Failed to debug Supabase state:', error)
       }
     }
 
+    const handleVisibilityChange = () => {
+      console.log(`👁️ VISIBILITY CHANGED: ${document.hidden ? 'HIDDEN' : 'VISIBLE'}`)
+      logSupabaseState()
+
+      if (!document.hidden && user) {
+        console.log('🔄 Tab became visible with user, testing Supabase client...')
+        setTimeout(logSupabaseState, 1000) // Test again after 1 second
+      }
+    }
+
+    const handleFocus = () => {
+      console.log('🎯 WINDOW FOCUSED')
+      logSupabaseState()
+    }
+
+    const handleBlur = () => {
+      console.log('😴 WINDOW BLURRED')
+      logSupabaseState()
+    }
+
+    // Log initial state
+    console.log('🚀 INITIAL SUPABASE DEBUG LOG')
+    logSupabaseState()
+
+    // Start periodic debugging (every 5 seconds)
+    debugInterval = setInterval(logSupabaseState, 5000)
+
+    // Listen to all visibility events
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('blur', handleBlur)
+
+    return () => {
+      clearInterval(debugInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('blur', handleBlur)
+      console.log('🧹 Supabase debugging cleanup')
+    }
   }, [user])
 
   return (
