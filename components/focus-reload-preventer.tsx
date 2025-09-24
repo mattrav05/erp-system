@@ -59,17 +59,17 @@ export function FocusReloadPreventer() {
     }
 
     // Override any router.reload or window.location.reload calls during focus changes
-    const originalReload = window.location.reload
+    const originalReload = window.location.reload.bind(window.location)
     const nextData = (window as unknown as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown> | undefined
     const originalRouterReload = (nextData?.router as Record<string, unknown> | undefined)?.reload
 
-    window.location.reload = function(forcedReload?: boolean) {
+    window.location.reload = function(): void {
       const timeSinceFocus = Date.now() - lastFocusTime
       if (timeSinceFocus < 2000) {
         console.log('🛡️ Blocked window.location.reload during focus change')
         return
       }
-      return originalReload.call(this, forcedReload)
+      originalReload()
     }
 
     // Listen for all focus-related events
@@ -80,8 +80,8 @@ export function FocusReloadPreventer() {
     return () => {
       // Restore original functions
       window.location.reload = originalReload
-      if (originalRouterReload) {
-        ((window as unknown as Record<string, unknown>).__NEXT_DATA__ as Record<string, unknown>).router.reload = originalRouterReload
+      if (originalRouterReload && nextData?.router) {
+        (nextData.router as Record<string, unknown>).reload = originalRouterReload
       }
 
       // Remove listeners
