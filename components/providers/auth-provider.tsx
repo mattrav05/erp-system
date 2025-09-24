@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       }
-    }, 30000) // Refresh every 30 seconds for debugging
+    }, 600000) // Refresh every 10 minutes
 
     // Set up connection health monitoring
     const unsubscribeHealth = connectionHealth.onHealthChange((healthy) => {
