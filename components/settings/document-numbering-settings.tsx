@@ -175,7 +175,7 @@ export default function DocumentNumberingSettings() {
 
         console.error('🚨 Auth state during failure:', {
           hasSession: !!session,
-          sessionExpired: session ? session.expires_at * 1000 < Date.now() : 'no session',
+          sessionExpired: session?.expires_at ? session.expires_at * 1000 < Date.now() : 'no session',
           hasUser: !!user,
           userError: userError?.message,
           timestamp: new Date().toLocaleTimeString()

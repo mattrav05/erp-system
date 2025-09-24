@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
         } else {
           console.log('✅ Session refreshed successfully')
-          if (data.session) {
+          if (data.session?.expires_at) {
             console.log('📊 New session expires at:', new Date(data.session.expires_at * 1000).toLocaleTimeString())
           }
         }
