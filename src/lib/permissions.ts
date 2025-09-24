@@ -1,5 +1,5 @@
 // Permission system utilities and types
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export type PermissionCategory =
   | 'sales'
@@ -74,7 +74,6 @@ export async function checkUserPermission(
   action: PermissionAction,
   resourceOwnerId?: string
 ): Promise<boolean> {
-  const supabase = createClient()
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -147,7 +146,6 @@ export async function checkMultiplePermissions(
  * Log security audit events
  */
 export async function logSecurityAudit(audit: SecurityAuditLog): Promise<void> {
-  const supabase = createClient()
 
   try {
     const { error } = await supabase.rpc('log_security_audit', {
@@ -175,7 +173,6 @@ export async function logSecurityAudit(audit: SecurityAuditLog): Promise<void> {
 export async function getUserPermissions(
   category: PermissionCategory
 ): Promise<UserPermission[]> {
-  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
@@ -248,7 +245,6 @@ export async function getCurrentUserInfo(): Promise<{
   salesRepId?: string
   territories?: string[]
 } | null> {
-  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null

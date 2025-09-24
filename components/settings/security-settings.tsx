@@ -59,7 +59,7 @@ interface SecurityAuditEntry {
   was_allowed: boolean
   denial_reason?: string
   created_at: string
-  profiles?: { full_name?: string; email: string }
+  profiles?: { full_name?: string; email: string } | null
 }
 
 export default function SecuritySettings() {

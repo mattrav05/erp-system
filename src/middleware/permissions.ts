@@ -1,6 +1,6 @@
 // API route permission middleware
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { PermissionCategory, PermissionAction } from '@/lib/permissions'
 
 export interface RoutePermission {
@@ -17,8 +17,7 @@ export async function withPermissions(
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const supabase = createClient()
-
+      
       // Get the user from the request
       const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -97,8 +96,7 @@ export async function withResourcePermissions(
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const supabase = createClient()
-
+      
       // Get the user from the request
       const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -222,8 +220,7 @@ export async function getSalesRepFromEstimate(req: NextRequest): Promise<string 
 
     if (!estimateId) return null
 
-    const supabase = createClient()
-    const { data } = await supabase
+        const { data } = await supabase
       .from('estimates')
       .select('sales_rep_id')
       .eq('id', estimateId)
@@ -243,8 +240,7 @@ export async function getPurchaseOrderOwner(req: NextRequest): Promise<string | 
 
     if (!poId) return null
 
-    const supabase = createClient()
-    const { data } = await supabase
+        const { data } = await supabase
       .from('purchase_orders')
       .select('created_by')
       .eq('id', poId)
@@ -267,8 +263,7 @@ export async function withRateLimit(
     // This would integrate with a rate limiting service
     // Higher permission levels could get higher limits
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json(
