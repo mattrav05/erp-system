@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { processImport, ImportOptions } from '@/lib/import-service'
-import { parseCSV, validateCSVData } from '@/lib/csv-utils'
+import { validateCSVData } from '@/lib/csv-utils'
 
 export async function POST(request: NextRequest) {
   try {
