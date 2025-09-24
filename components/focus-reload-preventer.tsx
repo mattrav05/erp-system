@@ -15,11 +15,11 @@ export function FocusReloadPreventer() {
     console.log('🛡️ Initializing focus reload prevention...')
 
     // Block h1-check.js error from causing reloads
-    const originalAddEventListener = window.addEventListener
-    window.addEventListener = function(type: string, listener: any, options?: any) {
+    const originalAddEventListener = window.addEventListener.bind(window)
+    window.addEventListener = function(this: Window, type: string, listener: any, options?: any) {
       // Block specific problematic events that trigger reloads
       if (type === 'error' || type === 'unhandledrejection') {
-        const wrappedListener = function(event: any) {
+        const wrappedListener = function(this: any, event: any) {
           // Check if error is from h1-check.js or similar
           if (event?.message?.includes('detectStore') ||
               event?.reason?.message?.includes('detectStore')) {
@@ -30,9 +30,9 @@ export function FocusReloadPreventer() {
           }
           return listener.call(this, event)
         }
-        return originalAddEventListener.call(this, type, wrappedListener, options)
+        return originalAddEventListener(type, wrappedListener, options)
       }
-      return originalAddEventListener.call(this, type, listener, options)
+      return originalAddEventListener(type, listener, options)
     }
 
     let isInitialLoad = true
