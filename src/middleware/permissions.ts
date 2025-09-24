@@ -159,7 +159,7 @@ export async function withResourcePermissions(
       })
 
       // Execute handler with context
-      return handler(req, { user, resourceOwnerId })
+      return handler(req, { user, resourceOwnerId: resourceOwnerId ?? undefined })
     } catch (error) {
       console.error('Permission middleware error:', error)
       return NextResponse.json(
