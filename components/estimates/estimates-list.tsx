@@ -14,6 +14,12 @@ import EditEstimateQuickBooksStyle from './edit-estimate-quickbooks-style'
 import ContextMenu from '@/components/ui/context-menu'
 import CollaborationIndicator from '@/components/ui/collaboration-indicator'
 import DatabaseSetupBanner from './database-setup-banner'
+import {
+  SalesPermissionGate,
+  PermissionButton,
+  PermissionGate
+} from '@/components/PermissionGate'
+import { useDataFilters, useCurrentUser } from '@/hooks/usePermissions'
 
 type Estimate = Database['public']['Tables']['estimates']['Row'] & {
   customers?: { name: string; email: string | null }
@@ -41,6 +47,10 @@ export default function EstimatesList() {
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null)
   const [isEditingOpen, setIsEditingOpen] = useState(false)
   const [showSetupBanner, setShowSetupBanner] = useState(false)
+
+  // Permission hooks
+  const { user } = useCurrentUser()
+  const { filters } = useDataFilters()
 
   useEffect(() => {
     fetchEstimates()
@@ -156,7 +166,7 @@ export default function EstimatesList() {
 
   const fetchEstimates = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('estimates')
         .select(`
           *,
@@ -164,7 +174,28 @@ export default function EstimatesList() {
           sales_reps (first_name, last_name, employee_code),
           estimate_templates (name)
         `)
-        .order('estimate_date', { ascending: false })
+
+      // Apply permission-based data filtering
+      if (!filters.sales.canViewAll) {
+        // Sales reps can only see their own estimates
+        if (filters.sales.salesRepFilter) {
+          query = query.eq('sales_rep_id', filters.sales.salesRepFilter)
+        }
+        // Territory-based filtering
+        else if (filters.sales.territoryFilter && filters.sales.territoryFilter.length > 0) {
+          // This would need to be implemented based on how territories are stored
+          // For now, we'll filter by sales rep territories in the sales_reps join
+          query = query.in('sales_reps.territory', filters.sales.territoryFilter)
+        }
+        // If no specific filters and can't view all, show empty list
+        else if (!filters.sales.canViewAll) {
+          setEstimates([])
+          setIsLoading(false)
+          return
+        }
+      }
+
+      const { data, error } = await query.order('estimate_date', { ascending: false })
 
       if (error) {
         console.error('Error fetching estimates:', error)
@@ -377,13 +408,15 @@ export default function EstimatesList() {
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button 
-            onClick={() => setIsCreateOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Estimate
-          </Button>
+          <SalesPermissionGate action="create">
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Estimate
+            </Button>
+          </SalesPermissionGate>
         </div>
       </div>
 
@@ -555,6 +588,7 @@ export default function EstimatesList() {
                     </div>
 
                     <div className="flex flex-col gap-2">
+                      <SalesPermissionGate action="read" resourceOwnerId={estimate.sales_rep_id || undefined}>
                       <Button
                         variant="outline"
                         size="sm"
@@ -563,6 +597,8 @@ export default function EstimatesList() {
                         <Eye className="w-4 h-4 mr-1" />
                         View
                       </Button>
+                    </SalesPermissionGate>
+                    <SalesPermissionGate action="delete" resourceOwnerId={estimate.sales_rep_id || undefined}>
                       <Button
                         variant="outline"
                         size="sm"
@@ -572,6 +608,7 @@ export default function EstimatesList() {
                         <Trash2 className="w-4 h-4 mr-1" />
                         Delete
                       </Button>
+                    </SalesPermissionGate>
                     </div>
                   </div>
                 </ContextMenu>

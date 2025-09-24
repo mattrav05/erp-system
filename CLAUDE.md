@@ -86,11 +86,18 @@ SUPABASE_ACCESS_TOKEN="sbp_636708b095bb2802fb1b0b67ff187031cfe1f5a7" supabase db
 - Windows CMD and PowerShell approaches (supabase command not found)
 - PowerShell + npx approach: DNS resolution issues
 
-**ROOT CAUSE IDENTIFIED**:
-- Supabase database host `db.tcwzhkeqwymqrljaadew.supabase.co` resolves to IPv6-only: `2600:1f16:1cd0:331c:4d06:2998:8c9c:3b38`
-- No IPv4 A record available (`ping -4` fails with "Address family not supported")
-- WSL2 lacks proper IPv6 connectivity to reach Supabase's IPv6-only database hosts
-- This is a WSL2/IPv6 architectural limitation, not a network configuration issue
+**ROOT CAUSE IDENTIFIED & RESEARCHED (Sept 24, 2025)**:
+- **Supabase transitioned to IPv6-only direct connections** in early 2024
+- **WSL2 has no IPv6 connectivity** (confirmed: `curl -6` fails with "Couldn't connect to server")
+- Database host `db.tcwzhkeqwymqrljaadew.supabase.co` resolves to IPv6-only: `2600:1f16:1cd0:331c:4d06:2998:8c9c:3b38`
+- **This is a known WSL2/Supabase compatibility issue** affecting many developers in 2025
+
+**OFFICIAL SOLUTIONS FROM SUPABASE**:
+1. **For CLI migrations**: Use Supabase SQL Editor (web interface) - bypasses WSL2 entirely ✅
+2. **For applications**: Use Supavisor Connection Pooler (IPv4-compatible session mode)
+3. **Enterprise option**: IPv4 Add-On ($4/month) for Pro+ organizations
+
+**WSL2 IPv6 Status**: Architectural limitation, not fixable through network configuration
 
 **Current Pending Migration**: `20250924173240_enhanced_company_profile.sql`
 - Location: `supabase/migrations/20250924173240_enhanced_company_profile.sql`

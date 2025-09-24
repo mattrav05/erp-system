@@ -7,7 +7,7 @@ ALTER TABLE IF EXISTS company_settings DROP CONSTRAINT IF EXISTS company_setting
 
 -- Enhanced company_settings table
 CREATE TABLE IF NOT EXISTS enhanced_company_settings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES profiles(id),

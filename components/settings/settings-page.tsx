@@ -35,6 +35,7 @@ import TermsEditor from '@/components/terms/terms-editor'
 import DocumentNumberingSettings from './document-numbering-settings'
 import ModuleSettings from './module-settings'
 import UserManagement from './user-management'
+import SecuritySettings from './security-settings'
 import ErrorBoundary from '@/components/ui/error-boundary'
 
 type SettingsCategory = 
@@ -714,13 +715,7 @@ export default function SettingsPage() {
         )
       
       case 'security':
-        return (
-          <div className="p-6 text-center">
-            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Security Settings</h3>
-            <p className="text-gray-600">Coming soon - Manage security and access controls</p>
-          </div>
-        )
+        return <SecuritySettings />
       
       case 'appearance':
         return (
