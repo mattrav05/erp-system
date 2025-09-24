@@ -222,33 +222,41 @@ export class PurchaseOrderImportModule implements ImportModule {
 
       // Date validations
       if (row.order_date) {
-        errors.push(...validateDate(row.order_date, 'Order Date', rowNum));
+        const dateError = validateDate(row.order_date, 'Order Date', rowNum);
+        if (dateError) errors.push(dateError);
       }
       if (row.expected_delivery_date) {
-        errors.push(...validateDate(row.expected_delivery_date, 'Expected Delivery Date', rowNum));
+        const dateError = validateDate(row.expected_delivery_date, 'Expected Delivery Date', rowNum);
+        if (dateError) errors.push(dateError);
       }
       if (row.ship_date) {
-        errors.push(...validateDate(row.ship_date, 'Ship Date', rowNum));
+        const dateError = validateDate(row.ship_date, 'Ship Date', rowNum);
+        if (dateError) errors.push(dateError);
       }
 
       // Financial validations
       if (row.subtotal) {
-        errors.push(...validateNumber(row.subtotal, 'Subtotal', rowNum));
+        const error = validateNumber(row.subtotal, 'Subtotal', rowNum);
+        if (error) errors.push(error);
       }
       if (row.tax_rate) {
-        errors.push(...validateNumber(row.tax_rate, 'Tax Rate', rowNum));
+        const error = validateNumber(row.tax_rate, 'Tax Rate', rowNum);
+        if (error) errors.push(error);
       }
       if (row.tax_amount) {
-        errors.push(...validateNumber(row.tax_amount, 'Tax Amount', rowNum));
+        const error = validateNumber(row.tax_amount, 'Tax Amount', rowNum);
+        if (error) errors.push(error);
       }
       if (row.total_amount) {
-        errors.push(...validateNumber(row.total_amount, 'Total Amount', rowNum));
+        const error = validateNumber(row.total_amount, 'Total Amount', rowNum);
+        if (error) errors.push(error);
       }
 
       // Status validation
       if (row.status) {
-        errors.push(...validateChoice(row.status, 'Status', 
-          ['PENDING', 'CONFIRMED', 'PARTIAL', 'RECEIVED', 'CANCELLED', 'ON_HOLD'], rowNum));
+        const error = validateChoice(row.status, 'Status',
+          ['PENDING', 'CONFIRMED', 'PARTIAL', 'RECEIVED', 'CANCELLED', 'ON_HOLD'], rowNum);
+        if (error) errors.push(error);
       }
 
       // Boolean validation
@@ -272,7 +280,8 @@ export class PurchaseOrderImportModule implements ImportModule {
       if (hasLineData) {
         // Line number validation
         if (row.line_number) {
-          errors.push(...validateNumber(row.line_number, 'Line Number', rowNum));
+          const error = validateNumber(row.line_number, 'Line Number', rowNum);
+          if (error) errors.push(error);
         }
 
         // Product validation - require either ID, name, or item code
@@ -294,7 +303,8 @@ export class PurchaseOrderImportModule implements ImportModule {
         if (!row.quantity) {
           errors.push({ row: rowNum, field: 'quantity', message: 'Quantity is required for line items' });
         } else {
-          errors.push(...validateNumber(row.quantity, 'Quantity', rowNum));
+          const error = validateNumber(row.quantity, 'Quantity', rowNum);
+          if (error) errors.push(error);
           if (parseFloat(row.quantity) <= 0) {
             errors.push({ row: rowNum, field: 'quantity', message: 'Quantity must be greater than 0' });
           }
@@ -304,24 +314,30 @@ export class PurchaseOrderImportModule implements ImportModule {
         if (!row.unit_price) {
           errors.push({ row: rowNum, field: 'unit_price', message: 'Unit Price is required for line items' });
         } else {
-          errors.push(...validateNumber(row.unit_price, 'Unit Price', rowNum));
+          const error = validateNumber(row.unit_price, 'Unit Price', rowNum);
+          if (error) errors.push(error);
         }
 
         // Optional line field validations
         if (row.line_total) {
-          errors.push(...validateNumber(row.line_total, 'Line Total', rowNum));
+          const error = validateNumber(row.line_total, 'Line Total', rowNum);
+          if (error) errors.push(error);
         }
         if (row.line_tax_rate) {
-          errors.push(...validateNumber(row.line_tax_rate, 'Line Tax Rate', rowNum));
+          const error = validateNumber(row.line_tax_rate, 'Line Tax Rate', rowNum);
+          if (error) errors.push(error);
         }
         if (row.line_tax_amount) {
-          errors.push(...validateNumber(row.line_tax_amount, 'Line Tax Amount', rowNum));
+          const error = validateNumber(row.line_tax_amount, 'Line Tax Amount', rowNum);
+          if (error) errors.push(error);
         }
         if (row.quantity_received) {
-          errors.push(...validateNumber(row.quantity_received, 'Quantity Received', rowNum));
+          const error = validateNumber(row.quantity_received, 'Quantity Received', rowNum);
+          if (error) errors.push(error);
         }
         if (row.quantity_reserved) {
-          errors.push(...validateNumber(row.quantity_reserved, 'Quantity Reserved', rowNum));
+          const error = validateNumber(row.quantity_reserved, 'Quantity Reserved', rowNum);
+          if (error) errors.push(error);
         }
       }
     }
