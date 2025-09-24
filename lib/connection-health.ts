@@ -11,11 +11,19 @@ export class ConnectionHealthMonitor {
   private lastHealthCheck = Date.now()
   private healthCheckInterval: NodeJS.Timeout | null = null
   private listeners: Array<(healthy: boolean) => void> = []
-  private readonly HEALTH_CHECK_INTERVAL = 30000 // 30 seconds
-  private readonly HEALTH_CHECK_TIMEOUT = 5000 // 5 seconds
+  private failureCount = 0
+  private readonly HEALTH_CHECK_INTERVAL = 60000 // 60 seconds (less frequent)
+  private readonly HEALTH_CHECK_TIMEOUT = 10000 // 10 seconds (more tolerant)
+  private readonly FAILURE_THRESHOLD = 2 // Must fail 2 times before marking unhealthy
 
   private constructor() {
-    this.startHealthChecks()
+    // Only start health checks if explicitly enabled
+    const isEnabled = process.env.NEXT_PUBLIC_ENABLE_CONNECTION_MONITORING === 'true'
+    if (isEnabled) {
+      this.startHealthChecks()
+    } else {
+      console.log('📡 Connection health monitoring is disabled')
+    }
   }
 
   static getInstance(): ConnectionHealthMonitor {
@@ -58,12 +66,24 @@ export class ConnectionHealthMonitor {
 
       await Promise.race([healthPromise, timeoutPromise])
 
+      // Health check succeeded - reset failure count
+      this.failureCount = 0
       this.updateHealthStatus(true)
       return true
     } catch (error) {
       console.error('❌ Health check failed:', error)
-      this.updateHealthStatus(false)
-      return false
+
+      // Increment failure count
+      this.failureCount++
+
+      // Only mark as unhealthy if we've failed multiple times
+      if (this.failureCount >= this.FAILURE_THRESHOLD) {
+        this.updateHealthStatus(false)
+      } else {
+        console.log(`⚠️ Health check failed ${this.failureCount}/${this.FAILURE_THRESHOLD} times, not marking unhealthy yet`)
+      }
+
+      return this.failureCount < this.FAILURE_THRESHOLD
     }
   }
 
@@ -71,12 +91,18 @@ export class ConnectionHealthMonitor {
    * Perform the actual health check
    */
   private async performHealthCheck(): Promise<void> {
-    // Simple query to test database connectivity
+    // Very lightweight query - just check if we can connect
     const { error } = await supabase
       .from('profiles')
-      .select('count(*)', { count: 'exact', head: true })
+      .select('id')
+      .limit(1)
 
     if (error) {
+      // Only throw for actual connection errors, not data errors
+      if (error.code === 'PGRST301' || error.code === 'PGRST116') {
+        // These are "no rows" or "table not found" - connection is fine
+        return
+      }
       throw error
     }
   }

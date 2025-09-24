@@ -32,27 +32,35 @@ export function ConnectionStatus() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-4 py-2 text-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-600 text-white px-4 py-2 text-sm border-b border-yellow-700">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
           <span>
-            Connection lost. Some features may not work properly.
+            Connection unstable. Monitoring connectivity...
             {lastChecked && (
-              <span className="text-red-200 ml-2">
+              <span className="text-yellow-200 ml-2">
                 Last checked: {lastChecked.toLocaleTimeString()}
               </span>
             )}
           </span>
         </div>
 
-        <button
-          onClick={handleRetry}
-          disabled={isRetrying}
-          className="bg-red-700 hover:bg-red-800 disabled:bg-red-800 px-3 py-1 rounded text-xs font-medium transition-colors"
-        >
-          {isRetrying ? 'Retrying...' : 'Retry Connection'}
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleRetry}
+            disabled={isRetrying}
+            className="bg-yellow-700 hover:bg-yellow-800 disabled:bg-yellow-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+          >
+            {isRetrying ? 'Checking...' : 'Check Now'}
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-yellow-700 hover:bg-yellow-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
       </div>
     </div>
   )
