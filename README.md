@@ -181,3 +181,4 @@ To run from source:
 # Go >= 1.22
 go run . help
 ```
+# Force Vercel deployment: Wed Sep 24 11:54:08 EDT 2025
