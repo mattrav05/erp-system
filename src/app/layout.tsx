@@ -6,6 +6,8 @@ import { FocusReloadPreventer } from '@/components/focus-reload-preventer'
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Force Vercel deployment: 2025-09-24
+
 export const metadata: Metadata = {
   title: "ERP System",
   description: "Inventory-focused ERP system with purchase orders, sales orders, and integrations",
