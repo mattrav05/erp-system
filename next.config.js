@@ -1,15 +1,31 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable automatic reload on build ID changes to prevent tab switch reloads
+  // Disable automatic reload on build ID changes to prevent focus loss reloads
   assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
 
   // Improve caching behavior for production
   poweredByHeader: false,
 
-  // Reduce aggressive reloading in production
+  // More aggressive fixes for focus-based reload issues
   experimental: {
-    // Disable some of the automatic reload mechanisms
-    optimizePackageImports: ['lucide-react']
+    optimizePackageImports: ['lucide-react'],
+    // Disable some client-side reload mechanisms
+    clientRouterFilter: false,
+    // Reduce aggressive build checking
+    isrMemoryCacheSize: 0
+  },
+
+  // Disable some automatic behaviors that might cause reloads
+  reactStrictMode: false,
+  swcMinify: true,
+
+  // Override webpack config to prevent aggressive reloading
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Disable hot reloading behaviors in production client
+      config.optimization.runtimeChunk = false
+    }
+    return config
   }
 }
 
