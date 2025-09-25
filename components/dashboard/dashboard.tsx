@@ -64,7 +64,7 @@ export default function Dashboard() {
 
         // Check for low stock items using product-specific reorder points
         if (inventoryResult.data) {
-          lowStockCount = inventoryResult.data.filter(item =>
+          lowStockCount = inventoryResult.data.filter((item: any) =>
             item.product?.reorder_point && item.quantity_available <= item.product.reorder_point
           ).length
         }
