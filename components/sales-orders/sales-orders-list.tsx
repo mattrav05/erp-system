@@ -10,6 +10,12 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Eye, Edit, Mail, Copy, Trash2, FileText, Package, Truck, CheckCircle, RefreshCw } from 'lucide-react'
 import ContextMenu from '@/components/ui/context-menu'
+import {
+  SalesPermissionGate,
+  PermissionButton,
+  PermissionGate
+} from '@/components/PermissionGate'
+import { useDataFilters, useCurrentUser } from '@/hooks/usePermissions'
 
 type SalesOrder = Database['public']['Tables']['sales_orders']['Row'] & {
   customers?: { name: string; email: string | null }
@@ -50,6 +56,10 @@ export default function SalesOrdersList({
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
+  // Permission hooks
+  const { user } = useCurrentUser()
+  const { filters } = useDataFilters()
+
   // Fetch sales reps for filter dropdown
   useEffect(() => {
     const fetchSalesReps = async () => {
@@ -70,8 +80,9 @@ export default function SalesOrdersList({
   }, [])
 
   useEffect(() => {
+    // Fetch immediately on mount for speed
     fetchSalesOrders()
-    
+
     // Listen for duplicate sales order events
     const handleOpenSalesOrder = (event: CustomEvent) => {
       const { salesOrder } = event.detail
@@ -80,13 +91,20 @@ export default function SalesOrdersList({
       // Open the duplicate sales order for editing
       onEditSalesOrder(salesOrder)
     }
-    
+
     window.addEventListener('openSalesOrderForEdit', handleOpenSalesOrder as EventListener)
-    
+
     return () => {
       window.removeEventListener('openSalesOrderForEdit', handleOpenSalesOrder as EventListener)
     }
   }, [])
+
+  // Re-fetch when permissions change
+  useEffect(() => {
+    if (filters && user) {
+      fetchSalesOrders()
+    }
+  }, [filters, user])
 
   // Check URL parameters to auto-open specific sales order
   useEffect(() => {
@@ -190,8 +208,8 @@ export default function SalesOrdersList({
   const fetchSalesOrders = async () => {
     try {
       console.log('Fetching sales orders from database...')
-      
-      const { data, error } = await supabase
+
+      let query = supabase
         .from('sales_orders')
         .select(`
           *,
@@ -211,7 +229,27 @@ export default function SalesOrdersList({
             )
           )
         `)
-        .order('order_date', { ascending: false })
+
+      // Apply permission-based data filtering only if filters are loaded
+      if (filters && filters.sales && !filters.sales.canViewAll) {
+        // Sales reps can only see their own sales orders
+        if (filters.sales.salesRepFilter) {
+          query = query.eq('sales_rep_id', filters.sales.salesRepFilter)
+        }
+        // Territory-based filtering
+        else if (filters.sales.territoryFilter && filters.sales.territoryFilter.length > 0) {
+          query = query.in('sales_reps.territory', filters.sales.territoryFilter)
+        }
+        // If no specific filters and can't view all, show empty list
+        else if (!filters.sales.canViewAll) {
+          setSalesOrders([])
+          setIsLoading(false)
+          return
+        }
+      }
+      // If filters are not loaded yet, fetch all (will be re-filtered when permissions load)
+
+      const { data, error } = await query.order('order_date', { ascending: false })
 
       if (error) {
         console.error('Error fetching sales orders:', error)

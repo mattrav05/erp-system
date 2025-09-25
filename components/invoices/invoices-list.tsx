@@ -9,6 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Filter, RefreshCw, Eye, Copy, Trash2, Mail, FileText, DollarSign } from 'lucide-react'
 import ContextMenu from '@/components/ui/context-menu'
+import {
+  SalesPermissionGate,
+  PermissionButton,
+  PermissionGate
+} from '@/components/PermissionGate'
+import { useDataFilters, useCurrentUser } from '@/hooks/usePermissions'
 
 type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
@@ -42,6 +48,10 @@ export default function InvoicesList({
   const [salesRepFilter, setSalesRepFilter] = useState<string>('all')
   const [salesReps, setSalesReps] = useState<Array<{ id: string; first_name: string; last_name: string; employee_code: string }>>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Permission hooks
+  const { user } = useCurrentUser()
+  const { filters } = useDataFilters()
 
   // Fetch sales reps for filter dropdown
   useEffect(() => {

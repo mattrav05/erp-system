@@ -6,6 +6,7 @@ import { Database } from '@/lib/supabase'
 import InvoicesList from './invoices-list'
 import CreateInvoiceQuickBooksStyle from './create-invoice-quickbooks-style'
 import EditInvoiceQuickBooksStyle from './edit-invoice-quickbooks-style'
+import { useDataFilters, useCurrentUser } from '@/hooks/usePermissions'
 
 type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
@@ -29,6 +30,10 @@ export default function InvoicesMain({
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Permission hooks
+  const { user } = useCurrentUser()
+  const { filters } = useDataFilters()
 
   // URL parameter handling
   useEffect(() => {
@@ -61,21 +66,48 @@ export default function InvoicesMain({
     }
   }, [openInvoiceId, createFromSalesOrderId, invoices, currentView, selectedInvoice])
 
-  // Fetch invoices
+  // Fetch invoices immediately on mount for speed
   useEffect(() => {
     fetchInvoices()
   }, [])
 
+  // Re-fetch when permissions change
+  useEffect(() => {
+    if (filters && user) {
+      fetchInvoices()
+    }
+  }, [filters, user])
+
   const fetchInvoices = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select(`
           *,
           customers (company_name, contact_name),
           sales_reps (first_name, last_name, employee_code)
         `)
-        .order('created_at', { ascending: false })
+
+      // Apply permission-based data filtering only if filters are loaded
+      if (filters && filters.sales && !filters.sales.canViewAll) {
+        // Sales reps can only see their own invoices
+        if (filters.sales.salesRepFilter) {
+          query = query.eq('sales_rep_id', filters.sales.salesRepFilter)
+        }
+        // Territory-based filtering
+        else if (filters.sales.territoryFilter && filters.sales.territoryFilter.length > 0) {
+          query = query.in('sales_reps.territory', filters.sales.territoryFilter)
+        }
+        // If no specific filters and can't view all, show empty list
+        else if (!filters.sales.canViewAll) {
+          setInvoices([])
+          setIsLoading(false)
+          return
+        }
+      }
+      // If filters are not loaded yet, fetch all (will be re-filtered when permissions load)
+
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       console.log('Fetched invoices count:', data?.length || 0)

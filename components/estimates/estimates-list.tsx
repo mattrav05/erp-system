@@ -74,10 +74,8 @@ export default function EstimatesList() {
   }, [])
 
   useEffect(() => {
-    // Only fetch if filters are loaded and user is available
-    if (filters && user) {
-      fetchEstimates()
-    }
+    // Fetch estimates immediately on mount (like other modules)
+    fetchEstimates()
 
     // Listen for duplicate estimate events
     const handleOpenEstimate = (event: CustomEvent) => {
@@ -93,6 +91,13 @@ export default function EstimatesList() {
 
     return () => {
       window.removeEventListener('openEstimateForEdit', handleOpenEstimate as EventListener)
+    }
+  }, [])
+
+  // Re-fetch when filters change (separate effect for permission updates)
+  useEffect(() => {
+    if (filters && user) {
+      fetchEstimates()
     }
   }, [filters, user])
 
@@ -204,8 +209,8 @@ export default function EstimatesList() {
           estimate_templates (name)
         `)
 
-      // Apply permission-based data filtering
-      if (!filters.sales.canViewAll) {
+      // Apply permission-based data filtering only if filters are loaded
+      if (filters && filters.sales && !filters.sales.canViewAll) {
         // Sales reps can only see their own estimates
         if (filters.sales.salesRepFilter) {
           query = query.eq('sales_rep_id', filters.sales.salesRepFilter)
@@ -223,6 +228,7 @@ export default function EstimatesList() {
           return
         }
       }
+      // If filters are not loaded yet, fetch all (will be re-filtered when permissions load)
 
       const { data, error } = await query.order('estimate_date', { ascending: false })
 
