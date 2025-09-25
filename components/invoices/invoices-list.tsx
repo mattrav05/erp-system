@@ -48,6 +48,9 @@ export default function InvoicesList({
   const [salesRepFilter, setSalesRepFilter] = useState<string>('all')
   const [salesReps, setSalesReps] = useState<Array<{ id: string; first_name: string; last_name: string; employee_code: string }>>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [dateRange, setDateRange] = useState<string>('all')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
 
   // Permission hooks
   const { user } = useCurrentUser()
@@ -240,10 +243,84 @@ export default function InvoicesList({
     return new Date(dateString).toLocaleDateString()
   }
 
-  // Calculate summary statistics
-  const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-  const paidAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
+  // Get date range boundaries
+  const getDateRangeBounds = () => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    switch (dateRange) {
+      case 'today':
+        return {
+          start: startOfToday,
+          end: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1)
+        }
+      case 'this_week':
+        const startOfWeek = new Date(startOfToday)
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+        return {
+          start: startOfWeek,
+          end: new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
+        }
+      case 'this_month':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), 1),
+          end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        }
+      case 'last_month':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+        }
+      case 'this_year':
+        return {
+          start: new Date(now.getFullYear(), 0, 1),
+          end: new Date(now.getFullYear(), 11, 31, 23, 59, 59)
+        }
+      case 'custom':
+        return {
+          start: customStartDate ? new Date(customStartDate) : null,
+          end: customEndDate ? new Date(customEndDate + 'T23:59:59') : null
+        }
+      default:
+        return { start: null, end: null }
+    }
+  }
+
+  // Filter invoices for summary calculations based on date range
+  const getDateFilteredInvoices = () => {
+    if (dateRange === 'all') return filteredInvoices
+
+    const { start, end } = getDateRangeBounds()
+    if (!start || !end) return filteredInvoices
+
+    return filteredInvoices.filter(invoice => {
+      const invoiceDate = new Date(invoice.invoice_date)
+      return invoiceDate >= start && invoiceDate <= end
+    })
+  }
+
+  // Calculate summary statistics based on date range
+  const dateFilteredInvoices = getDateFilteredInvoices()
+  const totalAmount = dateFilteredInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
+  const paidAmount = dateFilteredInvoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
   const outstandingAmount = totalAmount - paidAmount
+
+  // Get period display text
+  const getPeriodText = () => {
+    switch (dateRange) {
+      case 'today': return 'Today'
+      case 'this_week': return 'This Week'
+      case 'this_month': return 'This Month'
+      case 'last_month': return 'Last Month'
+      case 'this_year': return 'This Year'
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return `${new Date(customStartDate).toLocaleDateString()} - ${new Date(customEndDate).toLocaleDateString()}`
+        }
+        return 'Custom Range'
+      default: return 'All Time'
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -265,6 +342,47 @@ export default function InvoicesList({
         </div>
       </div>
 
+      {/* Date Range Selector */}
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Summary Period:</label>
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="this_week">This Week</option>
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="this_year">This Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          {dateRange === 'custom' && (
+            <div className="flex gap-2 items-center">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Start date"
+              />
+              <span className="text-gray-500">to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="End date"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border shadow-sm">
@@ -272,6 +390,7 @@ export default function InvoicesList({
             <div>
               <p className="text-sm font-medium text-gray-600">Total Invoiced</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount)}</p>
+              <p className="text-xs text-gray-500 mt-1">{getPeriodText()}</p>
             </div>
             <DollarSign className="w-8 h-8 text-blue-600" />
           </div>
@@ -281,6 +400,7 @@ export default function InvoicesList({
             <div>
               <p className="text-sm font-medium text-gray-600">Amount Paid</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</p>
+              <p className="text-xs text-gray-500 mt-1">{getPeriodText()}</p>
             </div>
             <DollarSign className="w-8 h-8 text-green-600" />
           </div>
@@ -290,6 +410,7 @@ export default function InvoicesList({
             <div>
               <p className="text-sm font-medium text-gray-600">Outstanding</p>
               <p className="text-2xl font-bold text-orange-600">{formatCurrency(outstandingAmount)}</p>
+              <p className="text-xs text-gray-500 mt-1">{getPeriodText()}</p>
             </div>
             <DollarSign className="w-8 h-8 text-orange-600" />
           </div>
