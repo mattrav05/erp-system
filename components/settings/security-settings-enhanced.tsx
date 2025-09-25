@@ -312,8 +312,9 @@ export default function EnhancedSecuritySettings() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                <div className="overflow-x-auto -mx-2 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle px-2 sm:px-0">
+                    <table className="w-full border-collapse" style={{ minWidth: '600px' }}>
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-2">User</th>
@@ -362,7 +363,8 @@ export default function EnhancedSecuritySettings() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </CardContent>
             </Card>

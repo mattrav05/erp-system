@@ -5,3 +5,35 @@ body {
   background: white;
   color: #111;
 }
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  /* Prevent horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure tables don't break layout */
+  .overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+
+  /* Better touch targets for mobile */
+  button, select, input {
+    min-height: 44px;
+  }
+}

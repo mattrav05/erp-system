@@ -1002,7 +1002,8 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
                 <td style="text-align: right;"><strong>$${total.toFixed(2)}</strong></td>
               </tr>
             </table>
-          </div>
+              </div>
+            </div>
           
           ${customerMessage ? `<div style="margin-top: 30px;"><strong>Notes:</strong><br>${customerMessage.replace(/\n/g, '<br>')}</div>` : ''}
         </body>
@@ -2109,7 +2110,8 @@ Phone: (555) 123-4567"
                 ))}
               </tbody>
             </table>
-          </div>
+              </div>
+            </div>
 
           {/* Totals Section - QuickBooks Style */}
           <div className="flex justify-end">
@@ -2432,7 +2434,7 @@ Phone: (555) 123-4567"
               <div>
                 <h3 className="text-lg font-semibold mb-3">Line Item Breakdown</h3>
                 <div className="overflow-x-auto border rounded-lg">
-                  <table className="w-full min-w-[1000px]">
+                  <table className="w-full " style={{ minWidth: "800px" }}">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
@@ -2493,7 +2495,8 @@ Phone: (555) 123-4567"
                       )}
                     </tbody>
                   </table>
-                </div>
+              </div>
+            </div>
               </div>
             </div>
           </div>

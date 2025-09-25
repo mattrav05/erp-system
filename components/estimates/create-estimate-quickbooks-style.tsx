@@ -1742,8 +1742,9 @@ Phone: (555) 123-4567"
               {/* Line Item Breakdown */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Line Item Breakdown</h3>
-                <div className="overflow-x-auto border rounded-lg">
-                  <table className="w-full min-w-[1000px]">
+                <div className="overflow-x-auto -mx-2 sm:mx-0 border rounded-lg">
+                  <div className="inline-block min-w-full align-middle px-2 sm:px-0">
+                    <table className="w-full" style={{ minWidth: '800px' }}>
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
@@ -1803,7 +1804,8 @@ Phone: (555) 123-4567"
                         </tr>
                       )}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </div>
 

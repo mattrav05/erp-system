@@ -487,7 +487,8 @@ export default function ExportWizard() {
             <CardTitle>Data Preview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-2 sm:px-0">
               <table className="w-full text-sm border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-gray-50">
@@ -514,6 +515,7 @@ export default function ExportWizard() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <p className="text-sm text-gray-600 mt-2">
               Showing first 5 rows of {previewData.length} records

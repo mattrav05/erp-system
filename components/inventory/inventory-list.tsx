@@ -1579,8 +1579,9 @@ export default function InventoryList() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-max text-sm">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-2 sm:px-0">
+              <table className="w-full text-sm" style={{ minWidth: '800px' }}>
               <thead>
                 <tr className="border-b">
                   {displayColumns.map((column, index) => {
@@ -1656,7 +1657,8 @@ export default function InventoryList() {
                   </ContextMenu>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
           {filteredInventory.length === 0 && (

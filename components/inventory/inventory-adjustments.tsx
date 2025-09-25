@@ -372,7 +372,8 @@ export default function InventoryAdjustments({ isOpen, onClose, inventory, onAdj
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-2 sm:px-0">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
@@ -494,6 +495,7 @@ export default function InventoryAdjustments({ isOpen, onClose, inventory, onAdj
                   </tbody>
                 </table>
               </div>
+            </div>
             </CardContent>
           </Card>
         </div>
