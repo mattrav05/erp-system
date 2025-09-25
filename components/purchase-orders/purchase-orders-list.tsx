@@ -542,8 +542,9 @@ export default function PurchaseOrdersList({
                     }
                   ]}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="overflow-x-auto">
+                    <div className="flex items-start justify-between min-w-[700px]">
+                      <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">
                           {purchaseOrder.po_number}
@@ -620,6 +621,7 @@ export default function PurchaseOrdersList({
                         <Trash2 className="w-4 h-4 mr-1" />
                         Delete
                       </Button>
+                    </div>
                     </div>
                   </div>
                 </ContextMenu>

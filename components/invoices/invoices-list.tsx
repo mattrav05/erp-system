@@ -346,8 +346,9 @@ export default function InvoicesList({
                 className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => onEditInvoice(invoice)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="overflow-x-auto">
+                  <div className="flex items-start justify-between min-w-[700px]">
+                    <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
                         {invoice.invoice_number}
@@ -476,6 +477,7 @@ export default function InvoicesList({
                       <Trash2 className="w-4 h-4 mr-1" />
                       Delete
                     </Button>
+                  </div>
                   </div>
                 </div>
               </div>
