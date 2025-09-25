@@ -131,6 +131,15 @@ npm run build
 npx next lint
 ```
 
+### Local TypeScript Validation (Before Push)
+**IMPORTANT**: When development server is running, always check TypeScript errors locally before pushing to save time:
+```bash
+npx tsc --noEmit
+```
+- This catches build failures before Vercel deployment
+- Faster feedback loop than waiting for remote build errors
+- Essential for syntax errors, JSX issues, and type mismatches
+
 ## Project Structure Notes
 
 ### Estimates Module

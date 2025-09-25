@@ -389,8 +389,9 @@ export default function VendorsList() {
         {filteredVendors.map((vendor) => (
           <Card key={vendor.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
+              <div className="overflow-x-auto">
+                <div className="flex justify-between items-start min-w-[400px]">
+                  <div className="flex-1">
                   <CardTitle className="text-lg">{vendor.company_name}</CardTitle>
                 </div>
                 <div className="flex gap-1">
@@ -412,6 +413,7 @@ export default function VendorsList() {
                   >
                     <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
+                </div>
                 </div>
               </div>
             </CardHeader>

@@ -494,8 +494,9 @@ export default function ShippingList() {
         {filteredDeductions.map((deduction) => (
           <Card key={deduction.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
+              <div className="overflow-x-auto">
+                <div className="flex justify-between items-start min-w-[500px]">
+                  <div className="flex-1">
                   <CardTitle className="text-lg">Shipments for {new Date(deduction.sync_date).toLocaleDateString()}</CardTitle>
                   <CardDescription>
                     {deduction.total_orders_processed} total orders • {deduction.orders_with_our_skus} contained our SKUs
@@ -505,6 +506,7 @@ export default function ShippingList() {
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(deduction.status)}`}>
                     {deduction.status.toUpperCase()}
                   </span>
+                </div>
                 </div>
               </div>
             </CardHeader>
