@@ -429,21 +429,21 @@ export default function SettingsPage() {
       id: 'users' as SettingsCategory,
       name: 'User Management',
       description: 'Manage user accounts, roles, and permissions',
-      icon: Shield,
+      icon: Users,
       color: 'text-blue-600'
     },
     {
       id: 'company' as SettingsCategory,
       name: 'Company Profile',
       description: 'Company information, address, and contact details',
-      icon: Globe,
+      icon: Building2,
       color: 'text-green-600'
     },
     {
       id: 'integrations' as SettingsCategory,
       name: 'Integrations',
       description: 'Third-party integrations and API connections',
-      icon: Database,
+      icon: Globe,
       color: 'text-purple-600'
     },
     {
@@ -471,7 +471,7 @@ export default function SettingsPage() {
       id: 'data' as SettingsCategory,
       name: 'Data Management',
       description: 'Backup, export, import, and data retention settings',
-      icon: FileText,
+      icon: Database,
       color: 'text-indigo-600'
     }
   ]
@@ -774,7 +774,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <Icon className={`w-5 h-5 mt-0.5 ${isActive ? 'text-blue-600' : category.color}`} />
+                        {Icon && <Icon className={`w-5 h-5 mt-0.5 ${isActive ? 'text-blue-600' : category.color}`} />}
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
                             {category.name}
