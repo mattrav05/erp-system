@@ -32,33 +32,35 @@ export function ConnectionStatus() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-600 text-white px-4 py-2 text-sm border-b border-yellow-700">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-600 text-white px-2 sm:px-4 py-2 text-sm border-b border-yellow-700">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
-          <span>
-            Connection unstable. Monitoring connectivity...
+        <div className="flex items-center space-x-2 min-w-0 flex-1">
+          <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse flex-shrink-0"></div>
+          <span className="truncate">
+            <span className="hidden sm:inline">Connection unstable. Monitoring connectivity...</span>
+            <span className="sm:hidden">Connection issues</span>
             {lastChecked && (
-              <span className="text-yellow-200 ml-2">
+              <span className="text-yellow-200 ml-2 hidden md:inline">
                 Last checked: {lastChecked.toLocaleTimeString()}
               </span>
             )}
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
           <button
             onClick={handleRetry}
             disabled={isRetrying}
-            className="bg-yellow-700 hover:bg-yellow-800 disabled:bg-yellow-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+            className="bg-yellow-700 hover:bg-yellow-800 disabled:bg-yellow-800 px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors"
           >
             {isRetrying ? 'Checking...' : 'Check Now'}
           </button>
           <button
             onClick={() => window.location.reload()}
-            className="bg-yellow-700 hover:bg-yellow-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+            className="bg-yellow-700 hover:bg-yellow-800 px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors"
           >
-            Refresh Page
+            <span className="hidden sm:inline">Refresh Page</span>
+            <span className="sm:hidden">Refresh</span>
           </button>
         </div>
       </div>

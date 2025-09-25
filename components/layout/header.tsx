@@ -106,14 +106,48 @@ export default function Header() {
   return (
     <header className="bg-blue-600 text-white shadow-lg border-b border-blue-700">
       {/* Main Title Bar with Navigation */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-14">
-          {/* Logo + Full Width Navigation */}
-          <div className="flex items-center space-x-6 flex-1">
-            <Link href="/" className="text-xl font-bold text-white">
-              EZ
-            </Link>
-            <nav className="flex space-x-1 overflow-x-auto flex-1">
+      <div className="mx-auto max-w-7xl px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
+          {/* Logo */}
+          <Link href="/" className="text-xl font-bold text-white flex-shrink-0">
+            EZ
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-1 overflow-x-auto flex-1 max-w-none ml-6">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`inline-flex items-center px-2 py-2 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-blue-500 text-white font-extrabold'
+                      : 'text-white hover:bg-blue-500 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-3 w-3 mr-1" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-md text-white hover:bg-blue-500"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden pb-4">
+            <nav className="grid grid-cols-3 gap-2">
               {navigation.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
@@ -121,43 +155,45 @@ export default function Header() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`inline-flex items-center px-2 py-2 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex flex-col items-center p-2 text-xs font-bold rounded-md transition-colors ${
                       isActive
                         ? 'bg-blue-500 text-white font-extrabold'
                         : 'text-white hover:bg-blue-500 hover:text-white'
                     }`}
                   >
-                    <Icon className="h-3 w-3 mr-1" />
+                    <Icon className="h-4 w-4 mb-1" />
                     {item.name}
                   </Link>
                 )
               })}
             </nav>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Search Bar with User Controls */}
       <div className="bg-white border-b border-gray-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="py-3 flex items-center gap-4">
-            <div className="flex-1">
+        <div className="mx-auto max-w-7xl px-2 sm:px-4 md:px-6 lg:px-8">
+          <div className="py-2 md:py-3 flex items-center gap-2 md:gap-4">
+            <div className="flex-1 min-w-0">
               <GlobalSearch />
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
               <Link href="/settings">
                 <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100 p-2">
                   <Settings className="h-4 w-4" />
                 </Button>
               </Link>
-              <div className="flex items-center space-x-3">
+              <div className="hidden sm:flex items-center space-x-2">
                 <ConnectionIndicator />
                 <span className="text-sm text-gray-700 whitespace-nowrap">
                   {profile?.first_name || user.email?.split('@')[0] || 'User'}
                 </span>
               </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 text-xs px-3 py-1">
-                Sign Out
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 text-xs px-2 md:px-3 py-1">
+                <span className="hidden sm:inline">Sign Out</span>
+                <span className="sm:hidden">Out</span>
               </Button>
             </div>
           </div>
