@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/auth-provider'
+import { UserRole } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -34,7 +35,7 @@ interface UserProfile {
   email: string
   first_name?: string
   last_name?: string
-  role: 'admin' | 'manager' | 'user'
+  role: UserRole
   created_at: string
   updated_at: string
   last_sign_in_at?: string

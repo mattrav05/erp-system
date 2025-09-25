@@ -35,7 +35,7 @@ import TermsEditor from '@/components/terms/terms-editor'
 import DocumentNumberingSettings from './document-numbering-settings'
 import ModuleSettings from './module-settings'
 import UserManagement from './user-management'
-import SecuritySettings from './security-settings'
+import EnhancedSecuritySettings from './security-settings-enhanced'
 import ErrorBoundary from '@/components/ui/error-boundary'
 
 type SettingsCategory = 
@@ -738,7 +738,7 @@ export default function SettingsPage() {
         )
       
       case 'security':
-        return <SecuritySettings />
+        return <EnhancedSecuritySettings />
       
       case 'appearance':
         return (
