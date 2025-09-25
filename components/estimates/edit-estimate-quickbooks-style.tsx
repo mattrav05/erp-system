@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useDefaultTaxRate } from '@/hooks/useDefaultTaxRate'
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
+import { getNextDocumentNumber, incrementDocumentNumber } from '@/lib/document-numbering'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/auth-provider'
@@ -1275,13 +1276,8 @@ ${companySettings?.company_name || 'Your Company Name'}`
       try {
         setIsSaving(true)
 
-        // Generate SO number
-        const today = new Date()
-        const year = today.getFullYear().toString().slice(-2)
-        const month = (today.getMonth() + 1).toString().padStart(2, '0')
-        const day = today.getDate().toString().padStart(2, '0')
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-        const soNumber = `SO-${year}${month}${day}-${random}`
+        // Generate SO number using document numbering system
+        const soNumber = await getNextDocumentNumber('sales_order')
 
         // Create sales order from estimate data
         // Note: Only include fields that exist in the sales_orders table
@@ -1372,6 +1368,9 @@ ${companySettings?.company_name || 'Your Company Name'}`
 
           if (linesError) throw linesError
         }
+
+        // Increment the document number for sales orders
+        await incrementDocumentNumber('sales_order')
 
         // Update estimate to link to sales order
         const { error: updateError } = await supabase
