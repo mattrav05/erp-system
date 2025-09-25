@@ -180,7 +180,15 @@ export default function EnhancedSecuritySettings() {
           const profile = profilesData?.find(p => p.id === entry.user_id)
           return {
             ...entry,
-            profiles: profile || { email: 'Unknown', first_name: null, last_name: null }
+            profiles: profile ? {
+              email: profile.email,
+              first_name: profile.first_name || undefined,
+              last_name: profile.last_name || undefined
+            } : {
+              email: 'Unknown',
+              first_name: undefined,
+              last_name: undefined
+            }
           }
         })
         setAuditLog(auditWithProfiles)
