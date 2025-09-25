@@ -378,7 +378,8 @@ export default function InvoicesList({
                         </Badge>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div className="overflow-x-auto">
+                      <div className="grid grid-cols-4 gap-4 text-sm text-gray-600 min-w-[600px]">
                       <div>
                         <span className="font-medium">Customer:</span>
                         <div>{invoice.customer_name || invoice.customers?.company_name || 'N/A'}</div>
@@ -396,6 +397,7 @@ export default function InvoicesList({
                         <div className="font-semibold text-gray-900">
                           {formatCurrency(invoice.total_amount)}
                         </div>
+                      </div>
                       </div>
                     </div>
 

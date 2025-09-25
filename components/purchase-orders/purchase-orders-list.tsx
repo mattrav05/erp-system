@@ -558,7 +558,8 @@ export default function PurchaseOrdersList({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="overflow-x-auto">
+                        <div className="grid grid-cols-4 gap-4 text-sm min-w-[600px]">
                         <div>
                           <p className="text-gray-500">Vendor</p>
                           <p className="font-medium">{purchaseOrder.vendors?.company_name || 'Unknown'}</p>
@@ -580,6 +581,7 @@ export default function PurchaseOrdersList({
                           <p className="font-medium text-lg">
                             {formatCurrency(purchaseOrder.total_amount || 0)}
                           </p>
+                        </div>
                         </div>
                       </div>
 
