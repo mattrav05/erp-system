@@ -46,7 +46,7 @@ export default function Dashboard() {
           invoicesResult
         ] = await Promise.all([
           supabase.from('products').select('id, reorder_point', { count: 'exact' }),
-          supabase.from('inventory').select('quantity_available, weighted_average_cost'),
+          supabase.from('inventory').select('quantity_available, weighted_average_cost, product:products(reorder_point)'),
           supabase.from('purchase_orders').select('id', { count: 'exact' }).in('status', ['DRAFT', 'SENT', 'ACKNOWLEDGED']),
           supabase.from('sales_orders').select('id', { count: 'exact' }).in('status', ['DRAFT', 'CONFIRMED']),
           supabase.from('invoices').select('id', { count: 'exact' }).in('status', ['DRAFT', 'SENT'])
@@ -62,9 +62,11 @@ export default function Dashboard() {
           }, 0)
         }
 
-        // Check for low stock items (simplified - would need to join with products in real implementation)
+        // Check for low stock items using product-specific reorder points
         if (inventoryResult.data) {
-          lowStockCount = inventoryResult.data.filter(item => item.quantity_available < 50).length
+          lowStockCount = inventoryResult.data.filter(item =>
+            item.product?.reorder_point && item.quantity_available <= item.product.reorder_point
+          ).length
         }
 
         setStats({
