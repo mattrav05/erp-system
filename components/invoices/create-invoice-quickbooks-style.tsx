@@ -282,11 +282,10 @@ export default function CreateInvoiceQuickBooksStyle({
       console.log('Step 3: Checking for sales order conversion...')
       await checkForSalesOrderConversion()
       
-      console.log('Step 4: Setting default due date...')
-      // Set default due date to 30 days from today
-      const today = new Date()
-      const due = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-      setDueDate(due.toISOString().split('T')[0])
+      console.log('Step 4: Setting default due date based on payment terms...')
+      // Calculate due date based on current payment terms and invoice date
+      const initialDueDate = calculateDueDate(date, terms)
+      setDueDate(initialDueDate)
       
       console.log('Step 5: Marking as initialized...')
       // Mark as initialized after all data is loaded
@@ -1571,10 +1570,10 @@ ${companySettings?.company_name || 'Your Company'}`
         // After saving, generate unique number for duplicate
         await generateInvoiceNumber()
         
-        setDate(new Date().toISOString().split('T')[0])
-        const today = new Date()
-        const due = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-        setDueDate(due.toISOString().split('T')[0])
+        const newDate = new Date().toISOString().split('T')[0]
+        setDate(newDate)
+        const newDueDate = calculateDueDate(newDate, terms)
+        setDueDate(newDueDate)
         setStatus('DRAFT')
         setHasUnsavedChanges(true)
         
@@ -1585,10 +1584,10 @@ ${companySettings?.company_name || 'Your Company'}`
     
     // Generate new invoice number
     await generateInvoiceNumber()
-    setDate(new Date().toISOString().split('T')[0])
-    const today = new Date()
-    const due = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-    setDueDate(due.toISOString().split('T')[0])
+    const newDate = new Date().toISOString().split('T')[0]
+    setDate(newDate)
+    const newDueDate = calculateDueDate(newDate, terms)
+    setDueDate(newDueDate)
     setStatus('draft')
     setHasUnsavedChanges(true)
     
