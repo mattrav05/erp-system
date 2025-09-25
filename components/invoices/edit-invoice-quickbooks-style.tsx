@@ -18,6 +18,45 @@ import DocumentFlowTracker, { DocumentRelationship } from '@/components/ui/docum
 import AuditInfo from '@/components/ui/audit-info'
 import { executeSaveOperation, displayError } from '@/lib/error-handling'
 
+// Utility function to calculate due date based on payment terms
+const calculateDueDate = (invoiceDate: string, paymentTerms: string): string => {
+  const baseDate = new Date(invoiceDate)
+  let daysToAdd = 30 // Default to 30 days
+
+  // Parse payment terms to determine days
+  switch (paymentTerms.trim()) {
+    case 'Due on receipt':
+    case 'Due on Receipt':
+      daysToAdd = 0
+      break
+    case 'Net 15':
+      daysToAdd = 15
+      break
+    case 'Net 30':
+      daysToAdd = 30
+      break
+    case 'Net 45':
+      daysToAdd = 45
+      break
+    case 'Net 60':
+      daysToAdd = 60
+      break
+    case '2/10 Net 30':
+      daysToAdd = 30 // Net 30 is the full term
+      break
+    default:
+      // Try to extract number from terms like "Net 45", "NET45", etc.
+      const match = paymentTerms.match(/\d+/)
+      if (match) {
+        daysToAdd = parseInt(match[0])
+      }
+      break
+  }
+
+  baseDate.setDate(baseDate.getDate() + daysToAdd)
+  return baseDate.toISOString().split('T')[0]
+}
+
 type Customer = Database['public']['Tables']['customers']['Row'] & {
   payment_terms?: { name: string } | null
 }
@@ -327,6 +366,14 @@ export default function EditInvoiceQuickBooksStyle({
       setHasUnsavedChanges(true)
     }
   }, [lineItems, defaultTaxRate, isInitialized, inventory, products])
+
+  // Auto-calculate due date when payment terms or invoice date changes
+  useEffect(() => {
+    if (date && terms) {
+      const newDueDate = calculateDueDate(date, terms)
+      setDueDate(newDueDate)
+    }
+  }, [date, terms])
 
   // Load invoice lines from database
   const fetchInvoiceLines = async () => {
