@@ -375,106 +375,129 @@ export default function SettingsPage() {
     }
   }
 
-  const categories = [
-    {
-      id: 'sales-reps' as SettingsCategory,
-      name: 'Sales Representatives',
-      description: 'Manage sales team members, territories, and commissions',
-      icon: Users,
-      color: 'text-teal-600'
-    },
-    {
-      id: 'templates' as SettingsCategory,
-      name: 'Document Templates',
-      description: 'Customize estimates, invoices, sales orders, and purchase orders',
-      icon: FileText,
-      color: 'text-purple-600'
-    },
-    {
-      id: 'tax-codes' as SettingsCategory,
-      name: 'Tax Codes',
-      description: 'Manage tax rates, tax-exempt codes, and custom tax categories',
-      icon: Receipt,
-      color: 'text-emerald-600'
-    },
-    {
-      id: 'payment-terms' as SettingsCategory,
-      name: 'Payment Terms',
-      description: 'Configure payment terms for estimates, sales orders, and invoices',
-      icon: DollarSign,
-      color: 'text-green-600'
-    },
-    {
-      id: 'document-numbering' as SettingsCategory,
-      name: 'Document Numbering',
-      description: 'Configure starting numbers for estimates, invoices, POs, and receipts',
-      icon: Hash,
-      color: 'text-indigo-600'
-    },
-    {
-      id: 'modules' as SettingsCategory,
-      name: 'Module Settings',
-      description: 'Enable or disable optional system modules',
-      icon: Layers3,
-      color: 'text-cyan-600'
-    },
-    {
-      id: 'po-settings' as SettingsCategory,
-      name: 'Purchase Orders / PO',
-      description: 'Company settings for purchase orders, billing and shipping addresses',
-      icon: ShoppingCart,
-      color: 'text-orange-600'
-    },
-    {
-      id: 'users' as SettingsCategory,
-      name: 'User Management',
-      description: 'Manage user accounts, roles, and permissions',
-      icon: Users,
-      color: 'text-blue-600'
-    },
-    {
-      id: 'company' as SettingsCategory,
-      name: 'Company Profile',
-      description: 'Company information, address, and contact details',
-      icon: Building2,
-      color: 'text-green-600'
-    },
-    {
-      id: 'integrations' as SettingsCategory,
-      name: 'Integrations',
-      description: 'Third-party integrations and API connections',
-      icon: Globe,
-      color: 'text-purple-600'
-    },
-    {
-      id: 'notifications' as SettingsCategory,
-      name: 'Notifications',
-      description: 'Email alerts, system notifications, and preferences',
-      icon: Bell,
-      color: 'text-orange-600'
-    },
-    {
-      id: 'security' as SettingsCategory,
-      name: 'Security',
-      description: 'Authentication, access controls, and security policies',
-      icon: Shield,
-      color: 'text-red-600'
-    },
-    {
-      id: 'appearance' as SettingsCategory,
-      name: 'Appearance',
-      description: 'Themes, layouts, and display preferences',
-      icon: Palette,
-      color: 'text-pink-600'
-    },
-    {
-      id: 'data' as SettingsCategory,
-      name: 'Data Management',
-      description: 'Backup, export, import, and data retention settings',
-      icon: Database,
-      color: 'text-indigo-600'
-    }
-  ]
+  // Safely create categories array with error handling
+  let categories: Array<{
+    id: SettingsCategory
+    name: string
+    description: string
+    icon: any
+    color: string
+  }> = []
+
+  try {
+    categories = [
+      {
+        id: 'sales-reps' as SettingsCategory,
+        name: 'Sales Representatives',
+        description: 'Manage sales team members, territories, and commissions',
+        icon: Users,
+        color: 'text-teal-600'
+      },
+      {
+        id: 'templates' as SettingsCategory,
+        name: 'Document Templates',
+        description: 'Customize estimates, invoices, sales orders, and purchase orders',
+        icon: FileText,
+        color: 'text-purple-600'
+      },
+      {
+        id: 'tax-codes' as SettingsCategory,
+        name: 'Tax Codes',
+        description: 'Manage tax rates, tax-exempt codes, and custom tax categories',
+        icon: Receipt,
+        color: 'text-emerald-600'
+      },
+      {
+        id: 'payment-terms' as SettingsCategory,
+        name: 'Payment Terms',
+        description: 'Configure payment terms for estimates, sales orders, and invoices',
+        icon: DollarSign,
+        color: 'text-green-600'
+      },
+      {
+        id: 'document-numbering' as SettingsCategory,
+        name: 'Document Numbering',
+        description: 'Configure starting numbers for estimates, invoices, POs, and receipts',
+        icon: Hash,
+        color: 'text-indigo-600'
+      },
+      {
+        id: 'modules' as SettingsCategory,
+        name: 'Module Settings',
+        description: 'Enable or disable optional system modules',
+        icon: Layers3,
+        color: 'text-cyan-600'
+      },
+      {
+        id: 'po-settings' as SettingsCategory,
+        name: 'Purchase Orders / PO',
+        description: 'Company settings for purchase orders, billing and shipping addresses',
+        icon: ShoppingCart,
+        color: 'text-orange-600'
+      },
+      {
+        id: 'users' as SettingsCategory,
+        name: 'User Management',
+        description: 'Manage user accounts, roles, and permissions',
+        icon: Users,
+        color: 'text-blue-600'
+      },
+      {
+        id: 'company' as SettingsCategory,
+        name: 'Company Profile',
+        description: 'Company information, address, and contact details',
+        icon: Building2,
+        color: 'text-green-600'
+      },
+      {
+        id: 'integrations' as SettingsCategory,
+        name: 'Integrations',
+        description: 'Third-party integrations and API connections',
+        icon: Globe,
+        color: 'text-purple-600'
+      },
+      {
+        id: 'notifications' as SettingsCategory,
+        name: 'Notifications',
+        description: 'Email alerts, system notifications, and preferences',
+        icon: Bell,
+        color: 'text-orange-600'
+      },
+      {
+        id: 'security' as SettingsCategory,
+        name: 'Security',
+        description: 'Authentication, access controls, and security policies',
+        icon: Shield,
+        color: 'text-red-600'
+      },
+      {
+        id: 'appearance' as SettingsCategory,
+        name: 'Appearance',
+        description: 'Themes, layouts, and display preferences',
+        icon: Palette,
+        color: 'text-pink-600'
+      },
+      {
+        id: 'data' as SettingsCategory,
+        name: 'Data Management',
+        description: 'Backup, export, import, and data retention settings',
+        icon: Database,
+        color: 'text-indigo-600'
+      }
+    ]
+  } catch (error) {
+    console.error('Error creating categories:', error)
+    // Provide fallback categories without icons
+    categories = [
+      {
+        id: 'sales-reps' as SettingsCategory,
+        name: 'Sales Representatives',
+        description: 'Manage sales team members, territories, and commissions',
+        icon: null,
+        color: 'text-teal-600'
+      }
+    ]
+  }
 
   const renderSettingsContent = () => {
     switch (activeCategory) {
@@ -760,33 +783,40 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="p-2">
               <div className="space-y-1">
-                {categories.map((category) => {
-                  const Icon = category.icon
-                  const isActive = activeCategory === category.id
-                  return (
-                    <button
-                      key={category.id}
-                      onClick={() => setActiveCategory(category.id)}
-                      className={`w-full text-left p-3 rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-blue-50 border border-blue-200 text-blue-900'
-                          : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {Icon && <Icon className={`w-5 h-5 mt-0.5 ${isActive ? 'text-blue-600' : category.color}`} />}
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
-                            {category.name}
-                          </p>
-                          <p className={`text-xs mt-1 ${isActive ? 'text-blue-700' : 'text-gray-500'}`}>
-                            {category.description}
-                          </p>
+                {categories && categories.length > 0 ? (
+                  categories.map((category) => {
+                    if (!category) return null
+                    const Icon = category?.icon
+                    const isActive = activeCategory === category.id
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => setActiveCategory(category.id)}
+                        className={`w-full text-left p-3 rounded-md transition-colors ${
+                          isActive
+                            ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                            : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {Icon && typeof Icon === 'function' && (
+                            <Icon className={`w-5 h-5 mt-0.5 ${isActive ? 'text-blue-600' : category.color || 'text-gray-600'}`} />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+                              {category.name || 'Unknown'}
+                            </p>
+                            <p className={`text-xs mt-1 ${isActive ? 'text-blue-700' : 'text-gray-500'}`}>
+                              {category.description || ''}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  )
-                })}
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className="text-gray-500 text-sm p-3">No categories available</div>
+                )}
               </div>
             </CardContent>
           </Card>
