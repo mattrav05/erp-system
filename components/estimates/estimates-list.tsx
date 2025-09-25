@@ -70,7 +70,7 @@ export default function EstimatesList() {
     return () => {
       window.removeEventListener('openEstimateForEdit', handleOpenEstimate as EventListener)
     }
-  }, [])
+  }, [filters])
 
   // Check URL parameters to auto-open specific estimate
   useEffect(() => {
