@@ -41,6 +41,8 @@ export default function EstimatesList() {
   const [filteredEstimates, setFilteredEstimates] = useState<Estimate[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [salesRepFilter, setSalesRepFilter] = useState<string>('all')
+  const [salesReps, setSalesReps] = useState<Array<{ id: string; first_name: string; last_name: string; employee_code: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -51,6 +53,25 @@ export default function EstimatesList() {
   // Permission hooks
   const { user } = useCurrentUser()
   const { filters } = useDataFilters()
+
+  // Fetch sales reps for filter dropdown
+  useEffect(() => {
+    const fetchSalesReps = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sales_reps')
+          .select('id, first_name, last_name, employee_code')
+          .order('first_name')
+
+        if (error) throw error
+        setSalesReps(data || [])
+      } catch (error) {
+        console.error('Error fetching sales reps:', error)
+      }
+    }
+
+    fetchSalesReps()
+  }, [])
 
   useEffect(() => {
     // Only fetch if filters are loaded and user is available
@@ -164,8 +185,13 @@ export default function EstimatesList() {
       filtered = filtered.filter(estimate => estimate.status === statusFilter)
     }
 
+    // Apply sales rep filter
+    if (salesRepFilter !== 'all') {
+      filtered = filtered.filter(estimate => estimate.sales_rep_id === salesRepFilter)
+    }
+
     setFilteredEstimates(filtered)
-  }, [estimates, searchTerm, statusFilter])
+  }, [estimates, searchTerm, statusFilter, salesRepFilter])
 
   const fetchEstimates = async () => {
     try {
@@ -451,6 +477,18 @@ export default function EstimatesList() {
                 <option value="REJECTED">Rejected</option>
                 <option value="EXPIRED">Expired</option>
                 <option value="CONVERTED">Converted</option>
+              </select>
+              <select
+                value={salesRepFilter}
+                onChange={(e) => setSalesRepFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Sales Reps</option>
+                {salesReps.map((rep) => (
+                  <option key={rep.id} value={rep.id}>
+                    {rep.first_name} {rep.last_name} ({rep.employee_code})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

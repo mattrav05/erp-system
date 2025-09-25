@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/lib/supabase'
 import { matchesAmount } from '@/lib/search-utils'
@@ -12,7 +12,8 @@ import ContextMenu from '@/components/ui/context-menu'
 
 type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
-  sales_orders?: { 
+  sales_reps?: { first_name: string; last_name: string; employee_code: string }
+  sales_orders?: {
     so_number: string
     status: string
     order_date: string
@@ -29,26 +30,51 @@ interface InvoicesListProps {
   onRefresh: () => void
 }
 
-export default function InvoicesList({ 
-  invoices, 
-  onCreateInvoice, 
-  onEditInvoice, 
+export default function InvoicesList({
+  invoices,
+  onCreateInvoice,
+  onEditInvoice,
   onDeleteInvoice,
-  onRefresh 
+  onRefresh
 }: InvoicesListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [salesRepFilter, setSalesRepFilter] = useState<string>('all')
+  const [salesReps, setSalesReps] = useState<Array<{ id: string; first_name: string; last_name: string; employee_code: string }>>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Fetch sales reps for filter dropdown
+  useEffect(() => {
+    const fetchSalesReps = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sales_reps')
+          .select('id, first_name, last_name, employee_code')
+          .order('first_name')
+
+        if (error) throw error
+        setSalesReps(data || [])
+      } catch (error) {
+        console.error('Error fetching sales reps:', error)
+      }
+    }
+
+    fetchSalesReps()
+  }, [])
 
   // Filter and search invoices
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.customers?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.sales_order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (invoice.sales_orders?.so_number && invoice.sales_orders.so_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        // Sales rep search
+        (invoice.sales_reps?.first_name && invoice.sales_reps.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (invoice.sales_reps?.last_name && invoice.sales_reps.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (invoice.sales_reps?.employee_code && invoice.sales_reps.employee_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
         // Search in amounts (supports various formats: 8024, 8,024, 8024.00, etc.)
         matchesAmount(invoice.total_amount, searchTerm) ||
         matchesAmount(invoice.subtotal, searchTerm) ||
@@ -56,13 +82,16 @@ export default function InvoicesList({
         matchesAmount(invoice.amount_paid, searchTerm) ||
         matchesAmount(invoice.balance_due, searchTerm)
 
-      const matchesStatus = statusFilter === 'all' || 
+      const matchesStatus = statusFilter === 'all' ||
         invoice.status === statusFilter ||
         (statusFilter === 'FROM_SO' && invoice.sales_order_id)
 
-      return matchesSearch && matchesStatus
+      const matchesSalesRep = salesRepFilter === 'all' ||
+        invoice.sales_rep_id === salesRepFilter
+
+      return matchesSearch && matchesStatus && matchesSalesRep
     })
-  }, [invoices, searchTerm, statusFilter])
+  }, [invoices, searchTerm, statusFilter, salesRepFilter])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -285,6 +314,18 @@ export default function InvoicesList({
             <option value="CANCELLED">Cancelled</option>
             <option value="FROM_SO">From Sales Orders</option>
           </select>
+          <select
+            value={salesRepFilter}
+            onChange={(e) => setSalesRepFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Sales Reps</option>
+            {salesReps.map((rep) => (
+              <option key={rep.id} value={rep.id}>
+                {rep.first_name} {rep.last_name} ({rep.employee_code})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -347,7 +388,7 @@ export default function InvoicesList({
                 onClick={() => onEditInvoice(invoice)}
               >
                 <div className="overflow-x-auto">
-                  <div className="flex items-start justify-between min-w-[700px]">
+                  <div className="flex items-start justify-between min-w-[800px]">
                     <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -380,10 +421,19 @@ export default function InvoicesList({
                       )}
                     </div>
                     <div className="overflow-x-auto">
-                      <div className="grid grid-cols-4 gap-4 text-sm text-gray-600 min-w-[600px]">
+                      <div className="grid grid-cols-5 gap-4 text-sm text-gray-600 min-w-[750px]">
                       <div>
                         <span className="font-medium">Customer:</span>
                         <div>{invoice.customer_name || invoice.customers?.company_name || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <span className="font-medium">Sales Rep:</span>
+                        <div>
+                          {invoice.sales_reps
+                            ? `${invoice.sales_reps.first_name} ${invoice.sales_reps.last_name}`
+                            : 'N/A'
+                          }
+                        </div>
                       </div>
                       <div>
                         <span className="font-medium">Date:</span>

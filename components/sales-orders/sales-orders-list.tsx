@@ -45,8 +45,29 @@ export default function SalesOrdersList({
   const [filteredSalesOrders, setFilteredSalesOrders] = useState<SalesOrder[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [salesRepFilter, setSalesRepFilter] = useState<string>('all')
+  const [salesReps, setSalesReps] = useState<Array<{ id: string; first_name: string; last_name: string; employee_code: string }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Fetch sales reps for filter dropdown
+  useEffect(() => {
+    const fetchSalesReps = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sales_reps')
+          .select('id, first_name, last_name, employee_code')
+          .order('first_name')
+
+        if (error) throw error
+        setSalesReps(data || [])
+      } catch (error) {
+        console.error('Error fetching sales reps:', error)
+      }
+    }
+
+    fetchSalesReps()
+  }, [])
 
   useEffect(() => {
     fetchSalesOrders()
@@ -158,8 +179,13 @@ export default function SalesOrdersList({
       }
     }
 
+    // Apply sales rep filter
+    if (salesRepFilter !== 'all') {
+      filtered = filtered.filter(so => so.sales_rep_id === salesRepFilter)
+    }
+
     setFilteredSalesOrders(filtered)
-  }, [salesOrders, searchTerm, statusFilter])
+  }, [salesOrders, searchTerm, statusFilter, salesRepFilter])
 
   const fetchSalesOrders = async () => {
     try {
@@ -518,6 +544,18 @@ export default function SalesOrdersList({
                 <option value="PARTIAL">Partial Invoicing</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="ON_HOLD">On Hold</option>
+              </select>
+              <select
+                value={salesRepFilter}
+                onChange={(e) => setSalesRepFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Sales Reps</option>
+                {salesReps.map((rep) => (
+                  <option key={rep.id} value={rep.id}>
+                    {rep.first_name} {rep.last_name} ({rep.employee_code})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

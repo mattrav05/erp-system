@@ -9,6 +9,7 @@ import EditInvoiceQuickBooksStyle from './edit-invoice-quickbooks-style'
 
 type Invoice = any & {
   customers?: { company_name: string; contact_name: string | null }
+  sales_reps?: { first_name: string; last_name: string; employee_code: string }
 }
 
 interface InvoicesMainProps {
@@ -71,7 +72,8 @@ export default function InvoicesMain({
         .from('invoices')
         .select(`
           *,
-          customers (company_name, contact_name)
+          customers (company_name, contact_name),
+          sales_reps (first_name, last_name, employee_code)
         `)
         .order('created_at', { ascending: false })
 
