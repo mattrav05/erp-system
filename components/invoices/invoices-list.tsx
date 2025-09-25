@@ -102,9 +102,20 @@ export default function InvoicesList({
       const matchesSalesRep = salesRepFilter === 'all' ||
         invoice.sales_rep_id === salesRepFilter
 
-      return matchesSearch && matchesStatus && matchesSalesRep
+      // Date range filtering
+      const matchesDateRange = (() => {
+        if (dateRange === 'all') return true
+
+        const { start, end } = getDateRangeBounds()
+        if (!start || !end) return true
+
+        const invoiceDate = new Date(invoice.invoice_date)
+        return invoiceDate >= start && invoiceDate <= end
+      })()
+
+      return matchesSearch && matchesStatus && matchesSalesRep && matchesDateRange
     })
-  }, [invoices, searchTerm, statusFilter, salesRepFilter])
+  }, [invoices, searchTerm, statusFilter, salesRepFilter, dateRange, customStartDate, customEndDate])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -286,21 +297,9 @@ export default function InvoicesList({
     }
   }
 
-  // Filter invoices for summary calculations based on date range
-  const getDateFilteredInvoices = () => {
-    if (dateRange === 'all') return filteredInvoices
-
-    const { start, end } = getDateRangeBounds()
-    if (!start || !end) return filteredInvoices
-
-    return filteredInvoices.filter(invoice => {
-      const invoiceDate = new Date(invoice.invoice_date)
-      return invoiceDate >= start && invoiceDate <= end
-    })
-  }
-
   // Calculate summary statistics based on date range
-  const dateFilteredInvoices = getDateFilteredInvoices()
+  // Since filteredInvoices now includes date filtering, we can use it directly
+  const dateFilteredInvoices = filteredInvoices
   const totalAmount = dateFilteredInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
   const paidAmount = dateFilteredInvoices.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0)
   const outstandingAmount = totalAmount - paidAmount
