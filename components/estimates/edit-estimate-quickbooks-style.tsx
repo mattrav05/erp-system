@@ -2432,7 +2432,7 @@ Phone: (555) 123-4567"
               <div>
                 <h3 className="text-lg font-semibold mb-3">Line Item Breakdown</h3>
                 <div className="overflow-x-auto border rounded-lg">
-                  <table className="w-full " style={{ minWidth: "800px" }}">
+                  <table className="w-full" style={{ minWidth: '800px' }}">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
