@@ -152,12 +152,12 @@ export default function ModuleSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           {getCategoryModules('shipping').map((module) => {
-            const Icon = module.icon
+            const Icon = module?.icon
             return (
               <div key={module.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-blue-50 rounded-lg">
-                    <Icon className="w-5 h-5 text-blue-600" />
+                    {Icon && <Icon className="w-5 h-5 text-blue-600" />}
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">{module.name}</h3>

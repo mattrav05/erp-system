@@ -23,7 +23,9 @@ import {
   Settings,
   Eye,
   EyeOff,
-  Users
+  Users,
+  Calculator,
+  ShoppingCart
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -870,15 +872,21 @@ export default function UserManagement() {
     const configs = {
       admin: { label: 'Admin', icon: Crown, color: 'bg-red-100 text-red-800' },
       manager: { label: 'Manager', icon: Settings, color: 'bg-yellow-100 text-yellow-800' },
-      user: { label: 'User', icon: User, color: 'bg-green-100 text-green-800' }
+      user: { label: 'User', icon: User, color: 'bg-green-100 text-green-800' },
+      sales_rep: { label: 'Sales Rep', icon: User, color: 'bg-blue-100 text-blue-800' },
+      sales_manager: { label: 'Sales Manager', icon: Settings, color: 'bg-purple-100 text-purple-800' },
+      inventory_manager: { label: 'Inventory Manager', icon: Settings, color: 'bg-indigo-100 text-indigo-800' },
+      accountant: { label: 'Accountant', icon: Calculator, color: 'bg-teal-100 text-teal-800' },
+      purchasing_agent: { label: 'Purchasing Agent', icon: ShoppingCart, color: 'bg-orange-100 text-orange-800' },
+      viewer: { label: 'Viewer', icon: Eye, color: 'bg-gray-100 text-gray-800' }
     }
 
-    const config = configs[role]
-    const Icon = config.icon
+    const config = configs[role] || { label: role || 'Unknown', icon: null, color: 'bg-gray-100 text-gray-800' }
+    const Icon = config?.icon
 
     return (
       <Badge className={`${config.color} border-0 flex items-center gap-1`}>
-        <Icon className="w-3 h-3" />
+        {Icon && <Icon className="w-3 h-3" />}
         {config.label}
       </Badge>
     )
