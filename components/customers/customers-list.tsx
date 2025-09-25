@@ -356,7 +356,7 @@ export default function CustomersList() {
           <Card key={customer.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="overflow-x-auto">
-                <div className="flex justify-between items-start min-w-[400px]">
+                <div className="flex justify-between items-start">
                   <div className="flex-1">
                   <CardTitle className="text-lg">{customer.company_name}</CardTitle>
                 </div>
