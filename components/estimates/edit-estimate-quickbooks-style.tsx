@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDefaultTaxRate } from '@/hooks/useDefaultTaxRate'
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning'
+import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/auth-provider'
@@ -122,6 +123,7 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
   // Get backend-controlled tax rate from settings
   const { defaultTaxRate } = useDefaultTaxRate()
   const { user } = useAuth()
+  const { companySettings } = useCompanySettings()
   
   // Profit calculations
   const [totalCost, setTotalCost] = useState(0)
@@ -950,9 +952,9 @@ export default function EditEstimateQuickBooksStyle({ estimate, onSave, onCancel
           </div>
           
           <div class="company-info">
-            <strong>[Your Company Name]</strong><br>
-            [Your Address]<br>
-            [Phone] | [Email]
+            <strong>${companySettings?.company_name || 'Your Company Name'}</strong><br>
+            ${companySettings?.billing_address_line_1 || 'Your Address'}<br>
+            ${companySettings?.billing_phone || 'Phone'} | ${companySettings?.billing_email || 'Email'}
           </div>
           
           <div class="estimate-info">
@@ -1055,7 +1057,7 @@ Estimate Summary:
 Thank you for your business.
 
 Best regards,
-[Your Company Name]`
+${companySettings?.company_name || 'Your Company Name'}`
       
       const mailtoUrl = customerEmail 
         ? `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
@@ -2290,10 +2292,10 @@ Phone: (555) 123-4567"
                         LOGO
                       </div>
                       <div className="text-sm">
-                        <p className="font-semibold">Your Company Name</p>
-                        <p>123 Business Street</p>
-                        <p>City, ST 12345</p>
-                        <p>(555) 123-4567</p>
+                        <p className="font-semibold">{companySettings?.company_name || 'Your Company Name'}</p>
+                        <p>{companySettings?.billing_address_line_1 || '123 Business Street'}</p>
+                        <p>{`${companySettings?.billing_city || 'City'}, ${companySettings?.billing_state || 'ST'} ${companySettings?.billing_zip_code || '12345'}`}</p>
+                        <p>{companySettings?.billing_phone || '(555) 123-4567'}</p>
                       </div>
                     </div>
                   </div>
