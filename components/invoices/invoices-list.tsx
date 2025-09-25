@@ -75,6 +75,49 @@ export default function InvoicesList({
     fetchSalesReps()
   }, [])
 
+  // Get date range boundaries
+  const getDateRangeBounds = () => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    switch (dateRange) {
+      case 'today':
+        return {
+          start: startOfToday,
+          end: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1)
+        }
+      case 'this_week':
+        const startOfWeek = new Date(startOfToday)
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+        return {
+          start: startOfWeek,
+          end: new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
+        }
+      case 'this_month':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), 1),
+          end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        }
+      case 'last_month':
+        return {
+          start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+          end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+        }
+      case 'this_year':
+        return {
+          start: new Date(now.getFullYear(), 0, 1),
+          end: new Date(now.getFullYear(), 11, 31, 23, 59, 59)
+        }
+      case 'custom':
+        return {
+          start: customStartDate ? new Date(customStartDate) : null,
+          end: customEndDate ? new Date(customEndDate + 'T23:59:59') : null
+        }
+      default:
+        return { start: null, end: null }
+    }
+  }
+
   // Filter and search invoices
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
@@ -252,49 +295,6 @@ export default function InvoicesList({
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString()
-  }
-
-  // Get date range boundaries
-  const getDateRangeBounds = () => {
-    const now = new Date()
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-    switch (dateRange) {
-      case 'today':
-        return {
-          start: startOfToday,
-          end: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1)
-        }
-      case 'this_week':
-        const startOfWeek = new Date(startOfToday)
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-        return {
-          start: startOfWeek,
-          end: new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
-        }
-      case 'this_month':
-        return {
-          start: new Date(now.getFullYear(), now.getMonth(), 1),
-          end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
-        }
-      case 'last_month':
-        return {
-          start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-          end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
-        }
-      case 'this_year':
-        return {
-          start: new Date(now.getFullYear(), 0, 1),
-          end: new Date(now.getFullYear(), 11, 31, 23, 59, 59)
-        }
-      case 'custom':
-        return {
-          start: customStartDate ? new Date(customStartDate) : null,
-          end: customEndDate ? new Date(customEndDate + 'T23:59:59') : null
-        }
-      default:
-        return { start: null, end: null }
-    }
   }
 
   // Calculate summary statistics based on date range
