@@ -53,8 +53,11 @@ export default function EstimatesList() {
   const { filters } = useDataFilters()
 
   useEffect(() => {
-    fetchEstimates()
-    
+    // Only fetch if filters are loaded and user is available
+    if (filters && user) {
+      fetchEstimates()
+    }
+
     // Listen for duplicate estimate events
     const handleOpenEstimate = (event: CustomEvent) => {
       const { estimate } = event.detail
@@ -64,13 +67,13 @@ export default function EstimatesList() {
       setEditingEstimate(estimate)
       setIsEditingOpen(true)
     }
-    
+
     window.addEventListener('openEstimateForEdit', handleOpenEstimate as EventListener)
-    
+
     return () => {
       window.removeEventListener('openEstimateForEdit', handleOpenEstimate as EventListener)
     }
-  }, [filters])
+  }, [filters, user])
 
   // Check URL parameters to auto-open specific estimate
   useEffect(() => {
