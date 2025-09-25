@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDefaultTaxRate } from '@/hooks/useDefaultTaxRate'
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning'
+import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { useAuth } from '@/components/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/lib/supabase'
@@ -106,7 +107,8 @@ export default function CreateSalesOrderQuickBooksStyle({
   
   // Get backend-controlled tax rate from settings
   const { defaultTaxRate } = useDefaultTaxRate()
-  
+  const { companySettings } = useCompanySettings()
+
   // Get current authenticated user
   const { user } = useAuth()
 
@@ -1179,10 +1181,10 @@ export default function CreateSalesOrderQuickBooksStyle({
                         LOGO
                       </div>
                       <div className="text-sm">
-                        <p className="font-semibold">Your Company Name</p>
-                        <p>123 Business Street</p>
-                        <p>City, ST 12345</p>
-                        <p>(555) 123-4567</p>
+                        <p className="font-semibold">{companySettings?.company_name || 'Your Company Name'}</p>
+                        <p>{companySettings?.billing_address_line_1 || '123 Business Street'}</p>
+                        <p>{`${companySettings?.billing_city || 'City'}, ${companySettings?.billing_state || 'ST'} ${companySettings?.billing_zip_code || '12345'}`}</p>
+                        <p>{companySettings?.billing_phone || '(555) 123-4567'}</p>
                       </div>
                     </div>
                   </div>
